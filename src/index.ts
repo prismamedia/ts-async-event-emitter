@@ -4,7 +4,7 @@ type MaybePromise<T> = Promise<T> | T;
 
 export type EventMap = Record<any, any>;
 
-export type EventListener<D = any> = (eventData: D) => MaybePromise<any>;
+export type EventListener<D = any> = (eventData: D) => MaybePromise<void>;
 
 export type BoundOff = () => void;
 
@@ -85,15 +85,15 @@ export default class EventEmitter<
     });
   }
 
-  public async emit<N extends TEventName, D extends TEventMap[N]>(eventName: N, eventData: D): Promise<void> {
-    await Promise.all([
-      ...(this.hasEventListenerSet(eventName)
-        ? [...this.getEventListenerSet(eventName)].map(async eventListener => eventListener(eventData))
-        : []),
-    ]);
-  }
-
   public eventNames(): Array<TEventName> {
     return [...this.eventListenerSetMap.keys()];
+  }
+
+  public async emit<N extends TEventName, D extends TEventMap[N]>(eventName: N, eventData: D): Promise<void> {
+    if (this.hasEventListenerSet(eventName)) {
+      await Promise.all([
+        ...[...this.getEventListenerSet(eventName)].map(async eventListener => eventListener(eventData)),
+      ]);
+    }
   }
 }

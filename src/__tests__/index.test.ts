@@ -11,8 +11,13 @@ describe('EventEmitter', () => {
 
     const result: any = {};
 
-    const offPre = ee.on(Event.Pre, ({ at }) => (result.at = at));
-    const offPost = ee.on(Event.Post, async ({ took }) => (result.took = took));
+    const offPre = ee.on(Event.Pre, ({ at }) => {
+      result.at = at;
+    });
+
+    const offPost = ee.on(Event.Post, async ({ took }) => {
+      result.took = took;
+    });
 
     expect(result).toEqual({});
 
@@ -44,7 +49,7 @@ describe('EventEmitter', () => {
   it('works without typing', async done => {
     const ee = new EventEmitter();
 
-    ee.on('notdDefinedEventName', () => null);
+    ee.on('notdDefinedEventName', () => {});
 
     await ee.emit('alsoNotdDefinedEventName', {});
 
