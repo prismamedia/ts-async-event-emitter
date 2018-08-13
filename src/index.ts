@@ -2,17 +2,24 @@ import { clearTimeout, setTimeout } from 'timers';
 
 type MaybePromise<T> = Promise<T> | T;
 
-export type EventMap = Record<string, any>;
+export type EventMap = Record<any, any>;
 
-export type EventListener<D = any> = (eventData: D) => MaybePromise<void>;
+export type EventListener<D = any> = (eventData: D) => MaybePromise<any>;
 
 export type BoundOff = () => void;
 
-export default class EventEmitter<TEventMap extends EventMap = any, TEventName extends keyof TEventMap = any> {
+export default class EventEmitter<
+  TEventMap extends EventMap = any,
+  TEventName extends keyof TEventMap = keyof TEventMap
+> {
   protected eventListenerSetMap = new Map<TEventName, Set<EventListener>>();
 
+  protected hasEventListenerSet<N extends TEventName>(eventName: N): boolean {
+    return this.eventListenerSetMap.has(eventName);
+  }
+
   protected getEventListenerSet<N extends TEventName, L extends EventListener<TEventMap[N]>>(eventName: N): Set<L> {
-    if (!this.eventListenerSetMap.has(eventName)) {
+    if (!this.hasEventListenerSet(eventName)) {
       this.eventListenerSetMap.set(eventName, new Set<L>());
     }
 
@@ -21,16 +28,18 @@ export default class EventEmitter<TEventMap extends EventMap = any, TEventName e
 
   public off<N extends TEventName, L extends EventListener<TEventMap[N]>>(eventName?: N, eventListener?: L): void {
     if (eventName) {
-      const eventListenerSet = this.getEventListenerSet(eventName);
+      if (this.hasEventListenerSet(eventName)) {
+        const eventListenerSet = this.getEventListenerSet(eventName);
 
-      if (eventListener) {
-        eventListenerSet.delete(eventListener);
+        if (eventListener) {
+          eventListenerSet.delete(eventListener);
 
-        if (eventListenerSet.size === 0) {
+          if (eventListenerSet.size === 0) {
+            this.eventListenerSetMap.delete(eventName);
+          }
+        } else {
           this.eventListenerSetMap.delete(eventName);
         }
-      } else {
-        this.eventListenerSetMap.delete(eventName);
       }
     } else {
       this.eventListenerSetMap.clear();
@@ -78,7 +87,9 @@ export default class EventEmitter<TEventMap extends EventMap = any, TEventName e
 
   public async emit<N extends TEventName, D extends TEventMap[N]>(eventName: N, eventData: D): Promise<void> {
     await Promise.all([
-      ...[...this.getEventListenerSet(eventName)].map(async eventListener => eventListener(eventData)),
+      ...(this.hasEventListenerSet(eventName)
+        ? [...this.getEventListenerSet(eventName)].map(async eventListener => eventListener(eventData))
+        : []),
     ]);
   }
 

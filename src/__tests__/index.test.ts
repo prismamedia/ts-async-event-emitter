@@ -1,33 +1,38 @@
 import EventEmitter from '../';
 
+enum Event {
+  Pre = 'pre',
+  Post = 'post',
+}
+
 describe('EventEmitter', () => {
   it('works', async done => {
-    const ee = new EventEmitter<{ pre: { at: number }; post: { took: number } }>();
+    const ee = new EventEmitter<{ [Event.Pre]: { at: number }; [Event.Post]: { took: number } }>();
 
     const result: any = {};
 
-    const offPre = ee.on('pre', ({ at }) => (result.at = at));
-    const offPost = ee.on('post', async ({ took }) => (result.took = took));
+    const offPre = ee.on(Event.Pre, ({ at }) => (result.at = at));
+    const offPost = ee.on(Event.Post, async ({ took }) => (result.took = took));
 
     expect(result).toEqual({});
 
     const preEventData = { at: 2000 };
 
-    await ee.emit('pre', preEventData);
+    await ee.emit(Event.Pre, preEventData);
 
     expect(result).toEqual({ at: 2000 });
 
     const postEventData = { took: 100 };
 
-    await ee.emit('post', postEventData);
+    await ee.emit(Event.Post, postEventData);
 
     expect(result).toEqual({ at: 2000, took: 100 });
 
-    expect(ee.eventNames()).toEqual(['pre', 'post']);
+    expect(ee.eventNames()).toEqual([Event.Pre, Event.Post]);
 
     offPre();
 
-    expect(ee.eventNames()).toEqual(['post']);
+    expect(ee.eventNames()).toEqual([Event.Post]);
 
     offPost();
 
@@ -36,40 +41,52 @@ describe('EventEmitter', () => {
     done();
   });
 
+  it('works without typing', async done => {
+    const ee = new EventEmitter();
+
+    ee.on('notdDefinedEventName', () => null);
+
+    await ee.emit('alsoNotdDefinedEventName', {});
+
+    done();
+  });
+
   it('once works', async done => {
-    const ee = new EventEmitter<{ pre: {} }>();
+    const ee = new EventEmitter<{ [Event.Pre]: {} }>();
 
     let count: number = 0;
 
-    ee.once('pre', () => {
+    ee.once(Event.Pre, () => {
       count++;
     });
 
-    await ee.emit('pre', {});
+    expect(ee.eventNames()).toEqual([Event.Pre]);
+
+    await ee.emit(Event.Pre, {});
 
     expect(count).toBe(1);
+    expect(ee.eventNames()).toEqual([]);
 
-    await ee.emit('pre', {});
+    await ee.emit(Event.Pre, {});
 
     expect(count).toBe(1);
-
-    expect(ee.eventNames()).toEqual(['pre']);
+    expect(ee.eventNames()).toEqual([]);
 
     done();
   });
 
   it('wait works', async done => {
-    const ee = new EventEmitter<{ pre: {} }>();
+    const ee = new EventEmitter<{ [Event.Pre]: {} }>();
 
-    await expect(ee.wait('pre', 100)).rejects.toMatch('Has waited for "pre" more than 100ms');
+    await expect(ee.wait(Event.Pre, 100)).rejects.toMatch('Has waited for "pre" more than 100ms');
 
     expect(ee.eventNames()).toEqual([]);
 
-    const wait = ee.wait('pre', 100);
+    const wait = ee.wait(Event.Pre, 100);
 
-    expect(ee.eventNames()).toEqual(['pre']);
+    expect(ee.eventNames()).toEqual([Event.Pre]);
 
-    await Promise.all([wait, ee.emit('pre', { test: 'wait' })]);
+    await Promise.all([wait, ee.emit(Event.Pre, { test: 'wait' })]);
 
     expect(ee.eventNames()).toEqual([]);
 
