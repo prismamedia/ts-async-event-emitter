@@ -16,23 +16,24 @@ enum Event {
 
 const ee = new EventEmitter<{ [Event.Pre]: { at: number }; [Event.Post]: { took: number } }>();
 
-// "offPre" is a convenient method to unregister the listener later, see below
-const offPre = ee.on(Event.Pre, ({ at }) => console.log({ at }));
-
-const offPost = ee.on(Event.Post, async ({ took }) => console.log({ took }));
+// "offFirstPre" is a convenient method to unregister the listener later, see below
+const offFirstPre = ee.on(Event.Pre, ({ at }) => console.log({ first: at }));
+ee.on(Event.Pre, ({ at }) => console.log({ second: at }));
+ee.on(Event.Post, async ({ took }) => console.log({ took }));
 
 // [...]
 
 await ee.emit(Event.Pre, { at: 2000 });
-// -> { at: 2000 }
+// -> { first: 2000 }
+// -> { second: 2000 }
 
 await ee.emit(Event.Post, { took: 100 });
 // -> { took: 100 }
 
-// Unregister the listener
-offPre();
+// Unregister the first listener
+offFirstPre();
 
 // Won't log anything
 await ee.emit(Event.Pre, { at: 2000 });
-// ->
+// -> { second: 2000 }
 ```
