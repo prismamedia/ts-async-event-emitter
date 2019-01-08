@@ -33,15 +33,15 @@ describe('EventEmitter', () => {
 
     expect(result).toEqual({ at: 2000, took: 100 });
 
-    expect(ee.eventNames()).toEqual([Event.Pre, Event.Post]);
+    expect(ee.getEventNames()).toEqual([Event.Pre, Event.Post]);
 
     offPre();
 
-    expect(ee.eventNames()).toEqual([Event.Post]);
+    expect(ee.getEventNames()).toEqual([Event.Post]);
 
     offPost();
 
-    expect(ee.eventNames()).toEqual([]);
+    expect(ee.getEventNames()).toEqual([]);
 
     done();
   });
@@ -65,17 +65,17 @@ describe('EventEmitter', () => {
       count++;
     });
 
-    expect(ee.eventNames()).toEqual([Event.Pre]);
+    expect(ee.getEventNames()).toEqual([Event.Pre]);
 
     await ee.emit(Event.Pre, {});
 
     expect(count).toBe(1);
-    expect(ee.eventNames()).toEqual([]);
+    expect(ee.getEventNames()).toEqual([]);
 
     await ee.emit(Event.Pre, {});
 
     expect(count).toBe(1);
-    expect(ee.eventNames()).toEqual([]);
+    expect(ee.getEventNames()).toEqual([]);
 
     done();
   });
@@ -85,15 +85,15 @@ describe('EventEmitter', () => {
 
     await expect(ee.wait(Event.Pre, 100)).rejects.toMatch('Has waited for "pre" more than 100ms');
 
-    expect(ee.eventNames()).toEqual([]);
+    expect(ee.getEventNames()).toEqual([]);
 
     const wait = ee.wait(Event.Pre, 100);
 
-    expect(ee.eventNames()).toEqual([Event.Pre]);
+    expect(ee.getEventNames()).toEqual([Event.Pre]);
 
     await Promise.all([wait, ee.emit(Event.Pre, { test: 'wait' })]);
 
-    expect(ee.eventNames()).toEqual([]);
+    expect(ee.getEventNames()).toEqual([]);
 
     done();
   });
