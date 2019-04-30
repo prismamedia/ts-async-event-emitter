@@ -22,14 +22,14 @@
     "build": "yarn run build:clean && yarn run build:commonjs && yarn run build:module",
     "prettier": "prettier --write \"**/*.ts\""
   },
-  "dependencies": {},
+  "dependencies": {
+    "@types/node": "*"
+  },
   "devDependencies": {
     "@types/jest": "*",
-    "@types/node": "*",
-    "jest": "^23.6.0",
-    "jest-each": "^23.6.0",
+    "jest": "^24.7.1",
     "prettier": "^1.13.7",
-    "ts-jest": "^23.1.4",
+    "ts-jest": "^24.0.2",
     "typescript": "^3.0.3"
   }
 }
