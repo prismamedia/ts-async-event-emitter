@@ -18,3 +18,4 @@ flow-typed/
 jest*/
 node_modules/
 var/logs/
+yarn.lock
