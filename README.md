@@ -18,23 +18,11 @@ enum Event {
 // We "type" the data carried by the events like this :
 const ee = new EventEmitter<{ [Event.Pre]: { at: number }; [Event.Post]: { took: number } }>();
 
-// We can listen on "named" events like this :
+// We can listen on events like this :
 // "offFirstPre" is a convenient method to unregister the listener later, see below
 const offFirstPre = ee.on(Event.Pre, ({ at }) => console.log({ first: at }));
 ee.on(Event.Pre, ({ at }) => console.log({ second: at * 2 }));
 ee.on(Event.Post, async ({ took }) => console.log({ took }));
-
-// We can listen on "any" events like this :
-ee.on((eventName, eventData) => {
-  // In order to have a proper typing of "eventData", we can use the "isEvent" type guard.
-  if (ee.isEvent(Event.Pre, eventName, eventData)) {
-    // Here the "eventData" has a "at" property.
-    console.log({ any: eventData.at })
-  } else if (ee.isEvent(Event.Post, eventName, eventData)) {
-    // Here the "eventData" has a "took" property.
-    console.log({ any: eventData.took })
-  }
-});
 
 // [...]
 
@@ -50,7 +38,7 @@ await ee.emit(Event.Post, { took: 100 });
 // Unregister the first listener
 offFirstPre();
 
-// Only the second listener remains, and the "any" ones
+// Only the second listener remains
 await ee.emit(Event.Pre, { at: 10000 });
 // -> { any: 10000 }
 // -> { second: 20000 }
@@ -61,25 +49,16 @@ await ee.emit(Event.Pre, { at: 10000 });
 ### once
 
 ```js
-// Subscribe to a "named" event for only one execution
+// Subscribe to an event for only one execution
 ee.once(Event.Pre, ({ at }) => console.log({ at }));
-
-// Subscribe to any event for only one execution
-ee.once((eventName, eventData) => console.log({ eventName, eventData }));
 ```
 
 ### wait
 
 ```js
-// Wait for a "named" event to be triggered
+// Wait for an event to be triggered
 const eventData = await ee.wait(Event.Pre);
 
-// Wait for a "named" event to be triggered with a 100ms timeout (if the "timeout" is reached before the "named" event has been triggered an Error will be thrown)
+// Wait for an event to be triggered with a 100ms timeout (if the "timeout" is reached before the event has been triggered an Error will be thrown)
 const eventData = await ee.wait(Event.Pre, 100);
-
-// Wait for any event to be triggered
-const eventData = await ee.wait();
-
-// Wait for any event to be triggered with a 100ms timeout (if the "timeout" is reached before any event has been triggered an Error will be thrown)
-const eventData = await ee.wait(100);
 ```
