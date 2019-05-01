@@ -14,151 +14,80 @@ export type EventListener<TEventMap extends EventMap, TEventName extends EventNa
   eventData: EventData<TEventMap, TEventName>,
 ) => MaybePromise<void>;
 
-export type AnyEventListener<TEventMap extends EventMap> = <TEventName extends EventName<TEventMap>>(
-  eventName: TEventName,
-  eventData: EventData<TEventMap, TEventName>,
-) => MaybePromise<void>;
-
 export type BoundOff = () => void;
 
 export class EventEmitter<TEventMap extends EventMap = any> {
-  protected namedEventListenerSetMap = new Map<EventName<TEventMap>, Set<EventListener<TEventMap, any>>>();
-  protected anyEventListenerSet = new Set<AnyEventListener<TEventMap>>();
-
-  public off<TEventName extends EventName<TEventMap>>(
-    eventName: TEventName,
-    eventListener: EventListener<TEventMap, TEventName>,
-  ): void;
-  public off(eventName: EventName<TEventMap>): void;
-  public off(anyEventListener: AnyEventListener<TEventMap>): void;
-  public off(): void;
+  protected eventListenerSetMap = new Map<EventName<TEventMap>, Set<EventListener<TEventMap, any>>>();
 
   /**
    * Unsubscribe either :
-   * - one listener for a given "named" event
-   * - all listeners for a given "named" event
-   * - one "any" listener
+   * - one listener for a given event
+   * - all listeners for a given event
    * - all listeners
    */
-  public off<TEventName extends EventName<TEventMap>, TEventListener extends EventListener<TEventMap, TEventName>>(
-    ...args: [TEventName, TEventListener] | [TEventName] | [AnyEventListener<TEventMap>] | []
+  public off<TEventName extends EventName<TEventMap>>(
+    eventName?: TEventName,
+    eventListener?: EventListener<TEventMap, TEventName>,
   ): void {
-    if (typeof args[0] === 'string' && typeof args[1] === 'function') {
-      const eventName = args[0];
-      const eventListener = args[1];
-
-      const eventListenerSet = this.namedEventListenerSetMap.get(eventName);
+    if (eventName && eventListener) {
+      const eventListenerSet = this.eventListenerSetMap.get(eventName);
       if (eventListenerSet) {
         eventListenerSet.delete(eventListener);
         if (eventListenerSet.size === 0) {
-          this.namedEventListenerSetMap.delete(eventName);
+          this.eventListenerSetMap.delete(eventName);
         }
       }
-    } else if (typeof args[0] === 'string') {
-      this.namedEventListenerSetMap.delete(args[0]);
-    } else if (typeof args[0] === 'function') {
-      this.anyEventListenerSet.delete(args[0]);
+    } else if (eventName) {
+      this.eventListenerSetMap.delete(eventName);
     } else {
-      this.namedEventListenerSetMap.clear();
-      this.anyEventListenerSet.clear();
+      this.eventListenerSetMap.clear();
     }
   }
 
-  public on<TEventName extends EventName<TEventMap>, TEventListener extends EventListener<TEventMap, TEventName>>(
-    eventName: TEventName,
-    eventListener: TEventListener,
-  ): BoundOff;
-  public on(anyEventListener: AnyEventListener<TEventMap>): BoundOff;
-
   /**
-   * Subscribe either to a "named" event or any event.
+   * Subscribe to an event.
    * Returns a method to unsubscribe later.
    */
-  public on<TEventName extends EventName<TEventMap>, TEventListener extends EventListener<TEventMap, TEventName>>(
-    ...args: [TEventName, TEventListener] | [AnyEventListener<TEventMap>]
-  ): BoundOff {
-    if (args.length === 2) {
-      const [eventName, eventListener] = args;
-
-      let eventListenerSet = this.namedEventListenerSetMap.get(eventName);
-      if (!eventListenerSet) {
-        this.namedEventListenerSetMap.set(eventName, (eventListenerSet = new Set<TEventListener>()));
-      }
-
-      eventListenerSet.add(eventListener);
-
-      return this.off.bind(this, eventName, eventListener);
-    } else {
-      const [anyEventListener] = args;
-
-      this.anyEventListenerSet.add(anyEventListener);
-
-      return this.off.bind(this, anyEventListener);
-    }
-  }
-
-  public once<TEventName extends EventName<TEventMap>, TEventListener extends EventListener<TEventMap, TEventName>>(
+  public on<TEventName extends EventName<TEventMap>>(
     eventName: TEventName,
-    eventListener: TEventListener,
-  ): BoundOff;
-  public once(anyEventListener: AnyEventListener<TEventMap>): BoundOff;
+    eventListener: EventListener<TEventMap, TEventName>,
+  ): BoundOff {
+    let eventListenerSet = this.eventListenerSetMap.get(eventName);
+    if (!eventListenerSet) {
+      this.eventListenerSetMap.set(eventName, (eventListenerSet = new Set()));
+    }
+
+    eventListenerSet.add(eventListener);
+
+    return this.off.bind(this, eventName, eventListener as any);
+  }
 
   /**
-   * Subscribe to either a "named" event or any event only once.
+   * Subscribe to an event only once.
    * It will be unsubscribed after the first execution.
    */
-  public once<TEventName extends EventName<TEventMap>, TEventListener extends EventListener<TEventMap, TEventName>>(
-    ...args: [TEventName, TEventListener] | [AnyEventListener<TEventMap>]
+  public once<TEventName extends EventName<TEventMap>>(
+    eventName: TEventName,
+    eventListener: EventListener<TEventMap, TEventName>,
   ): BoundOff {
-    if (args.length === 2) {
-      const [eventName, eventListener] = args;
+    const eventListenerWrapper: EventListener<TEventMap, TEventName> = async eventData => {
+      this.off(eventName, eventListenerWrapper);
 
-      const eventListenerWrapper: EventListener<TEventMap, TEventName> = async eventData => {
-        this.off(eventName, eventListenerWrapper);
+      await eventListener(eventData);
+    };
 
-        await eventListener(eventData);
-      };
-
-      return this.on(eventName, eventListenerWrapper);
-    } else {
-      const [anyEventListener] = args;
-
-      const anyEventListenerWrapper: AnyEventListener<TEventMap> = async (eventName, eventData) => {
-        this.off(anyEventListenerWrapper);
-
-        await anyEventListener(eventName, eventData);
-      };
-
-      return this.on(anyEventListenerWrapper);
-    }
+    return this.on(eventName, eventListenerWrapper);
   }
 
   public async wait<TEventName extends EventName<TEventMap>, TEventData extends EventData<TEventMap, TEventName>>(
     eventName: TEventName,
-    timeout: number,
-  ): Promise<TEventData>;
-  public async wait<TEventName extends EventName<TEventMap>, TEventData extends EventData<TEventMap, TEventName>>(
-    eventName: TEventName,
-  ): Promise<TEventData>;
-  public async wait<TEventName extends EventName<TEventMap>, TEventData extends EventData<TEventMap, TEventName>>(
-    timeout: number,
-  ): Promise<[TEventName, TEventData]>;
-  public async wait<
-    TEventName extends EventName<TEventMap>,
-    TEventData extends EventData<TEventMap, TEventName>
-  >(): Promise<[TEventName, TEventData]>;
-
-  public async wait<TEventName extends EventName<TEventMap>, TEventData extends EventData<TEventMap, TEventName>>(
-    ...args: [TEventName, number] | [TEventName] | [number] | []
-  ): Promise<TEventData | [TEventName, TEventData]> {
-    return new Promise<TEventData | [TEventName, TEventData]>((resolve, reject) => {
+    timeout: number | null = null,
+  ): Promise<TEventData> {
+    return new Promise<TEventData>((resolve, reject) => {
       let off: BoundOff;
 
-      if (typeof args[0] === 'string') {
-        const eventName = args[0];
-        const timeout = typeof args[1] === 'number' && args[1] > 0 ? args[1] : null;
-
-        const timeoutId = timeout
+      const timeoutId =
+        timeout != null && timeout > 0
           ? setTimeout(() => {
               off && off();
 
@@ -166,56 +95,24 @@ export class EventEmitter<TEventMap extends EventMap = any> {
             }, timeout)
           : null;
 
-        off = this.once(eventName, eventData => {
-          timeoutId && clearTimeout(timeoutId);
+      off = this.once(eventName, eventData => {
+        timeoutId && clearTimeout(timeoutId);
 
-          resolve(eventData);
-        });
-      } else {
-        const timeout = typeof args[0] === 'number' && args[0] > 0 ? args[0] : null;
-
-        const timeoutId = timeout
-          ? setTimeout(() => {
-              off && off();
-
-              reject(`Has waited for any event more than ${timeout}ms`);
-            }, timeout)
-          : null;
-
-        off = this.once((eventName, eventData) => {
-          timeoutId && clearTimeout(timeoutId);
-
-          resolve(([eventName, eventData] as unknown) as [TEventName, TEventData]);
-        });
-      }
+        resolve(eventData);
+      });
     });
   }
 
   public getEventNames(): Array<EventName<TEventMap>> {
-    return [...this.namedEventListenerSetMap.keys()];
+    return [...this.eventListenerSetMap.keys()];
   }
 
-  public isEvent<TEventName extends EventName<TEventMap>>(
-    eventNamePredicate: TEventName,
-    eventName: EventName<TEventMap>,
-    eventData: TEventMap[EventName<TEventMap>],
-  ): eventData is TEventMap[TEventName] {
-    return eventNamePredicate === eventName;
-  }
-
-  protected getEventListeners<TEventName extends EventName<TEventMap>, D extends EventData<TEventMap, TEventName>>(
+  protected getEventListeners<TEventName extends EventName<TEventMap>>(
     eventName: TEventName,
-  ): Array<(eventData: D) => MaybePromise<void>> {
-    const eventListenerSet = this.namedEventListenerSetMap.get(eventName);
+  ): Array<(eventData: EventData<TEventMap, TEventName>) => MaybePromise<void>> {
+    const eventListenerSet = this.eventListenerSetMap.get(eventName);
 
-    return [
-      // "Any" event listeners
-      ...[...this.anyEventListenerSet].map(eventListener => async (eventData: D) =>
-        eventListener(eventName, eventData),
-      ),
-      // "Named" event listeners
-      ...(eventListenerSet ? [...eventListenerSet] : []),
-    ];
+    return eventListenerSet ? [...eventListenerSet] : [];
   }
 
   public getEventListenerCount(eventName: EventName<TEventMap>): number {

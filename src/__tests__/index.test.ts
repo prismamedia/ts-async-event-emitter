@@ -23,24 +23,12 @@ describe('EventEmitter', () => {
       result.took = took;
     });
 
-    ee.on(async (eventName, eventData) => {
-      // In order to have a proper typing of "eventData", we can use the "isEvent" type guard.
-      if (ee.isEvent(Event.Pre, eventName, eventData)) {
-        // Here the "eventData" has a "at" property.
-        result.anyAt = eventData.at;
-      } else if (ee.isEvent(Event.Post, eventName, eventData)) {
-        // Here the "eventData" has a "took" property.
-        result.anyTook = eventData.took;
-      }
-    });
-
     expect(result).toMatchInlineSnapshot(`Object {}`);
 
     await ee.emit(Event.Pre, { at: 2000 });
 
     expect(result).toMatchInlineSnapshot(`
 Object {
-  "anyAt": 2000,
   "first": 2000,
   "second": 4000,
 }
@@ -50,8 +38,6 @@ Object {
 
     expect(result).toMatchInlineSnapshot(`
 Object {
-  "anyAt": 2000,
-  "anyTook": 100,
   "first": 2000,
   "second": 4000,
   "took": 100,
@@ -92,8 +78,6 @@ Array [
 
     expect(result).toMatchInlineSnapshot(`
 Object {
-  "anyAt": 10000,
-  "anyTook": 100,
   "first": 2000,
   "second": 4000,
   "took": 100,
@@ -168,60 +152,6 @@ Array [
 Object {
   "test": "wait",
 }
-`);
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
-
-    done();
-  });
-
-  it('once any works', async done => {
-    const ee = new EventEmitter<{ [Event.Pre]: {} }>();
-
-    let count: number = 0;
-
-    ee.once(() => {
-      count++;
-    });
-
-    ee.once(() => {
-      count++;
-    });
-
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
-
-    await ee.emit(Event.Pre, {});
-
-    expect(count).toMatchInlineSnapshot(`2`);
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
-
-    await ee.emit(Event.Pre, {});
-
-    expect(count).toMatchInlineSnapshot(`2`);
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
-
-    done();
-  });
-
-  it('wait any works', async done => {
-    const ee = new EventEmitter<{ [Event.Pre]: {} }>();
-
-    await expect(ee.wait(100)).rejects.toMatchInlineSnapshot(`"Has waited for any event more than 100ms"`);
-
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
-
-    const wait = ee.wait(100);
-
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
-
-    const [waited] = await Promise.all([wait, ee.emit(Event.Pre, { test: 'waitAny' })]);
-
-    expect(waited).toMatchInlineSnapshot(`
-Array [
-  "pre",
-  Object {
-    "test": "waitAny",
-  },
-]
 `);
     expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
 
