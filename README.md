@@ -46,6 +46,18 @@ await ee.emit(Event.Pre, { at: 10000 });
 
 ## Other convenient methods are available :
 
+### onConfig
+
+```js
+// Subscribe to a bunch of events
+ee.onConfig({
+  // Several listeners for this event
+  [Event.Pre]: [() => console.log({ at }), () => console.log({ at: at * 2 })],
+  // Only one here
+  [Event.Post]: () => console.log({ took }),
+});
+```
+
 ### once
 
 ```js

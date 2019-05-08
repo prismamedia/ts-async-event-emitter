@@ -1,6 +1,8 @@
 import { clearTimeout, setTimeout } from 'timers';
 
-type MaybePromise<T> = Promise<T> | T;
+type Maybe<T> = undefined | null | T;
+type MaybeArray<T> = T | Array<T>;
+type MaybePromise<T> = T | Promise<T>;
 
 export type EventMap = {
   [eventName: string]: any;
@@ -15,6 +17,10 @@ export type EventListener<TEventMap extends EventMap, TEventName extends EventNa
 ) => MaybePromise<void>;
 
 export type BoundOff = () => void;
+
+export type EventConfigMap<TEventMap extends EventMap> = {
+  [TEventName in EventName<TEventMap>]?: Maybe<MaybeArray<EventListener<TEventMap, TEventName>>>
+};
 
 export class EventEmitter<TEventMap extends EventMap = any> {
   protected eventListenerSetMap = new Map<EventName<TEventMap>, Set<EventListener<TEventMap, any>>>();
@@ -60,6 +66,25 @@ export class EventEmitter<TEventMap extends EventMap = any> {
     eventListenerSet.add(eventListener);
 
     return this.off.bind(this, eventName, eventListener as any);
+  }
+
+  /**
+   * Subscribe to a bunch of events.
+   * Returns an array of unsubscribe methods
+   */
+  public onConfig(config: EventConfigMap<TEventMap>): BoundOff[] {
+    const offs: BoundOff[] = [];
+
+    for (const [eventName, eventConfig] of Object.entries(config)) {
+      if (eventConfig != null) {
+        const eventListeners = Array.isArray(eventConfig) ? eventConfig : [eventConfig];
+        for (const eventListener of eventListeners) {
+          offs.push(this.on(eventName, eventListener));
+        }
+      }
+    }
+
+    return offs;
   }
 
   /**

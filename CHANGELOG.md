@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2019-05-08
+
+### Added
+
+- Add an "onConfig" method to subscribe a bunch of events
+
 ## [2.0.1] - 2019-05-01
 
 ### Changed

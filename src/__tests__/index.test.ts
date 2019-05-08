@@ -23,66 +23,85 @@ describe('EventEmitter', () => {
       result.took = took;
     });
 
-    expect(result).toMatchInlineSnapshot(`Object {}`);
+    expect(result).toEqual({});
 
     await ee.emit(Event.Pre, { at: 2000 });
 
-    expect(result).toMatchInlineSnapshot(`
-Object {
-  "first": 2000,
-  "second": 4000,
-}
-`);
+    expect(result).toEqual({
+      first: 2000,
+      second: 4000,
+    });
 
     await ee.emit(Event.Post, { took: 100 });
 
-    expect(result).toMatchInlineSnapshot(`
-Object {
-  "first": 2000,
-  "second": 4000,
-  "took": 100,
-}
-`);
+    expect(result).toEqual({
+      first: 2000,
+      second: 4000,
+      took: 100,
+    });
 
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`
-Array [
-  "pre",
-  "post",
-]
-`);
+    expect(ee.getEventNames()).toEqual(['pre', 'post']);
 
     firstOffPre();
 
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`
-Array [
-  "pre",
-  "post",
-]
-`);
+    expect(ee.getEventNames()).toEqual(['pre', 'post']);
 
     offPost();
 
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`
-Array [
-  "pre",
-]
-`);
+    expect(ee.getEventNames()).toEqual(['pre']);
 
     secondOffPre();
 
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
+    expect(ee.getEventNames()).toEqual([]);
 
     await ee.emit(Event.Pre, { at: 10000 });
 
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
+    expect(ee.getEventNames()).toEqual([]);
 
-    expect(result).toMatchInlineSnapshot(`
-Object {
-  "first": 2000,
-  "second": 4000,
-  "took": 100,
-}
-`);
+    expect(result).toEqual({
+      first: 2000,
+      second: 4000,
+      took: 100,
+    });
+
+    done();
+  });
+
+  it('addConfig works', async done => {
+    const ee = new EventEmitter<{ [Event.Pre]: { at: number }; [Event.Post]: { took: number } }>();
+
+    const result: any = {};
+
+    const offs = ee.onConfig({
+      // Several listeners for this event
+      [Event.Pre]: [
+        ({ at }) => {
+          result.firstPreCall = at;
+        },
+        ({ at }) => {
+          result.secondPreCall = at;
+        },
+      ],
+
+      // Only one here
+      [Event.Post]: ({ took }) => {
+        result.firstPostCall = took;
+      },
+    });
+
+    expect(ee.getEventNames()).toEqual(['pre', 'post']);
+
+    await Promise.all([ee.emit(Event.Pre, { at: 10 }), ee.emit(Event.Post, { took: 100 })]);
+
+    expect(result).toEqual({
+      firstPostCall: 100,
+      firstPreCall: 10,
+      secondPreCall: 10,
+    });
+
+    offs.forEach(off => off());
+
+    expect(ee.getEventNames()).toEqual([]);
 
     done();
   });
@@ -110,21 +129,18 @@ Object {
       count++;
     });
 
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`
-Array [
-  "pre",
-]
-`);
+    expect(count).toEqual(0);
+    expect(ee.getEventNames()).toEqual(['pre']);
 
     await ee.emit(Event.Pre, {});
 
-    expect(count).toMatchInlineSnapshot(`2`);
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
+    expect(count).toEqual(2);
+    expect(ee.getEventNames()).toEqual([]);
 
     await ee.emit(Event.Pre, {});
 
-    expect(count).toMatchInlineSnapshot(`2`);
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
+    expect(count).toEqual(2);
+    expect(ee.getEventNames()).toEqual([]);
 
     done();
   });
@@ -136,24 +152,19 @@ Array [
       `"Has waited for the \\"pre\\" event more than 100ms"`,
     );
 
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
+    expect(ee.getEventNames()).toEqual([]);
 
     const wait = ee.wait(Event.Pre, 100);
 
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`
-Array [
-  "pre",
-]
-`);
+    expect(ee.getEventNames()).toEqual(['pre']);
 
     const [waited] = await Promise.all([wait, ee.emit(Event.Pre, { test: 'wait' })]);
 
-    expect(waited).toMatchInlineSnapshot(`
-Object {
-  "test": "wait",
-}
-`);
-    expect(ee.getEventNames()).toMatchInlineSnapshot(`Array []`);
+    expect(waited).toEqual({
+      test: 'wait',
+    });
+
+    expect(ee.getEventNames()).toEqual([]);
 
     done();
   });
