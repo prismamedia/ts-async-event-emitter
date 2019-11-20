@@ -9,27 +9,22 @@
     "type": "git",
     "url": "https://github.com/prismamedia/ts-async-event-emitter"
   },
-  "main": "dist/commonjs/index.js",
-  "module": "dist/module/index.js",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.js",
   "typings": "dist/types/index.d.ts",
   "scripts": {
-    "test": "jest --verbose",
-    "test:clean": "jest --clearCache",
+    "build": "tsc --build tsconfig.json tsconfig.esm.json",
+    "build:watch": "yarn run build --watch",
+    "test": "NODE_ENV=test jest --detectOpenHandles --forceExit --verbose --passWithNoTests",
     "test:watch": "yarn run test --watchAll",
-    "build:clean": "rm -rf ./dist",
-    "build:commonjs": "tsc -b ./tsconfig.commonjs.json",
-    "build:module": "tsc -b ./tsconfig.module.json",
-    "build": "yarn run build:clean && yarn run build:commonjs && yarn run build:module",
     "prettier": "prettier --write \"**/*.ts\""
   },
-  "dependencies": {
-    "@types/node": "*"
-  },
   "devDependencies": {
-    "@types/jest": "*",
-    "jest": "^24.8.0",
-    "prettier": "^1.13.7",
-    "ts-jest": "^24.0.2",
-    "typescript": "^3.0.3"
+    "@types/jest": "^24.0.23",
+    "@types/node": "^12.12.11",
+    "jest": "^24.9.0",
+    "prettier": "^1.19.1",
+    "ts-jest": "^24.1.0",
+    "typescript": "^3.7.2"
   }
 }

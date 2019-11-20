@@ -19,7 +19,7 @@ export type EventListener<TEventMap extends EventMap, TEventName extends EventNa
 export type BoundOff = () => void;
 
 export type EventConfigMap<TEventMap extends EventMap> = {
-  [TEventName in EventName<TEventMap>]?: Maybe<MaybeArray<EventListener<TEventMap, TEventName>>>
+  [TEventName in EventName<TEventMap>]?: Maybe<MaybeArray<EventListener<TEventMap, TEventName>>>;
 };
 
 export class EventEmitter<TEventMap extends EventMap = any> {
@@ -106,7 +106,7 @@ export class EventEmitter<TEventMap extends EventMap = any> {
 
   public async wait<TEventName extends EventName<TEventMap>, TEventData extends EventData<TEventMap, TEventName>>(
     eventName: TEventName,
-    timeout: number | null = null,
+    timeout?: number | null,
   ): Promise<TEventData> {
     return new Promise<TEventData>((resolve, reject) => {
       let off: BoundOff;

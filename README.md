@@ -1,6 +1,6 @@
 **Typescript async event emitter**
 
-[![npm version](https://badge.fury.io/js/%40prismamedia%2Fts-async-event-emitter.svg)](https://badge.fury.io/js/%40prismamedia%2Fts-async-event-emitter) [![CircleCI](https://circleci.com/gh/prismamedia/ts-async-event-emitter/tree/master.svg?style=svg)](https://circleci.com/gh/prismamedia/ts-async-event-emitter/tree/master)
+[![npm version](https://badge.fury.io/js/%40prismamedia%2Fts-async-event-emitter.svg)](https://badge.fury.io/js/%40prismamedia%2Fts-async-event-emitter) [![github actions status](https://github.com/prismamedia/ts-async-event-emitter/workflows/CI/badge.svg)](https://github.com/prismamedia/ts-async-event-emitter/actions) [![code style: prettier](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square)](https://github.com/prettier/prettier)
 
 Heavily inspired by https://github.com/sindresorhus/emittery#typescript, without the legacy part
 
