@@ -4,26 +4,40 @@ type Maybe<T> = undefined | null | T;
 type MaybeArray<T> = T | Array<T>;
 type MaybePromise<T> = T | Promise<T>;
 
-export type EventMap = {
-  [eventName: string]: any;
+export type EventMap = Record<keyof any, any>;
+
+export type EventKind<TEventMap extends EventMap> = keyof TEventMap;
+
+export type EventData<
+  TEventMap extends EventMap,
+  TEventKind extends EventKind<TEventMap> = EventKind<TEventMap>
+> = TEventMap[TEventKind];
+
+export type EventListener<
+  TEventMap extends EventMap,
+  TEventKind extends EventKind<TEventMap> = EventKind<TEventMap>
+> = (eventData: EventData<TEventMap, TEventKind>) => MaybePromise<void>;
+
+export type EventConfig<
+  TEventMap extends EventMap,
+  TEventKind extends EventKind<TEventMap> = EventKind<TEventMap>
+> = Maybe<MaybeArray<Maybe<EventListener<TEventMap, TEventKind>>>>;
+
+export type EventConfigMap<TEventMap extends EventMap> = {
+  [TEventKind in EventKind<TEventMap>]?: EventKind<TEventMap> extends number
+    ? // Forbid usage of "numeric" key because javascript does not support it: they are transform into "string"
+      never
+    : EventConfig<TEventMap, TEventKind>;
 };
-
-export type EventName<TEventMap extends EventMap> = keyof TEventMap;
-
-export type EventData<TEventMap extends EventMap, TEventName extends EventName<TEventMap>> = TEventMap[TEventName];
-
-export type EventListener<TEventMap extends EventMap, TEventName extends EventName<TEventMap>> = (
-  eventData: EventData<TEventMap, TEventName>,
-) => MaybePromise<void>;
 
 export type BoundOff = () => void;
 
-export type EventConfigMap<TEventMap extends EventMap> = {
-  [TEventName in EventName<TEventMap>]?: Maybe<MaybeArray<EventListener<TEventMap, TEventName>>>;
-};
-
 export class EventEmitter<TEventMap extends EventMap = any> {
-  protected eventListenerSetMap = new Map<EventName<TEventMap>, Set<EventListener<TEventMap, any>>>();
+  protected eventListenerSetMap = new Map<EventKind<TEventMap>, Set<EventListener<TEventMap, any>>>();
+
+  public constructor(config?: EventConfigMap<TEventMap> | null) {
+    this.onConfig(config);
+  }
 
   /**
    * Unsubscribe either :
@@ -31,19 +45,16 @@ export class EventEmitter<TEventMap extends EventMap = any> {
    * - all listeners for a given event
    * - all listeners
    */
-  public off<TEventName extends EventName<TEventMap>>(
-    eventName?: TEventName,
-    eventListener?: EventListener<TEventMap, TEventName>,
+  public off<TEventKind extends EventKind<TEventMap>>(
+    eventName?: TEventKind,
+    eventListener?: EventListener<TEventMap, TEventKind>,
   ): void {
-    if (eventName && eventListener) {
+    if (typeof eventName !== 'undefined' && eventListener) {
       const eventListenerSet = this.eventListenerSetMap.get(eventName);
-      if (eventListenerSet) {
-        eventListenerSet.delete(eventListener);
-        if (eventListenerSet.size === 0) {
-          this.eventListenerSetMap.delete(eventName);
-        }
+      if (eventListenerSet && eventListenerSet.delete(eventListener) && eventListenerSet.size === 0) {
+        this.eventListenerSetMap.delete(eventName);
       }
-    } else if (eventName) {
+    } else if (typeof eventName !== 'undefined') {
       this.eventListenerSetMap.delete(eventName);
     } else {
       this.eventListenerSetMap.clear();
@@ -54,9 +65,9 @@ export class EventEmitter<TEventMap extends EventMap = any> {
    * Subscribe to an event.
    * Returns a method to unsubscribe later.
    */
-  public on<TEventName extends EventName<TEventMap>>(
-    eventName: TEventName,
-    eventListener: EventListener<TEventMap, TEventName>,
+  public on<TEventKind extends EventKind<TEventMap>>(
+    eventName: TEventKind,
+    eventListener: EventListener<TEventMap, TEventKind>,
   ): BoundOff {
     let eventListenerSet = this.eventListenerSetMap.get(eventName);
     if (!eventListenerSet) {
@@ -72,14 +83,22 @@ export class EventEmitter<TEventMap extends EventMap = any> {
    * Subscribe to a bunch of events.
    * Returns an array of unsubscribe methods
    */
-  public onConfig(config: EventConfigMap<TEventMap>): BoundOff[] {
+  public onConfig(config?: EventConfigMap<TEventMap> | null): BoundOff[] {
     const offs: BoundOff[] = [];
 
-    for (const [eventName, eventConfig] of Object.entries(config)) {
-      if (eventConfig != null) {
-        const eventListeners = Array.isArray(eventConfig) ? eventConfig : [eventConfig];
-        for (const eventListener of eventListeners) {
-          offs.push(this.on(eventName, eventListener));
+    if (config != null) {
+      for (const eventName of [
+        ...Object.getOwnPropertyNames(config),
+        ...Object.getOwnPropertySymbols(config),
+      ] as EventKind<TEventMap>[]) {
+        const eventConfig = config[eventName];
+        if (eventConfig != null) {
+          const eventListeners = Array.isArray(eventConfig) ? eventConfig : [eventConfig];
+          for (const eventListener of eventListeners) {
+            if (eventListener != null) {
+              offs.push(this.on(eventName, eventListener));
+            }
+          }
         }
       }
     }
@@ -91,11 +110,11 @@ export class EventEmitter<TEventMap extends EventMap = any> {
    * Subscribe to an event only once.
    * It will be unsubscribed after the first execution.
    */
-  public once<TEventName extends EventName<TEventMap>>(
-    eventName: TEventName,
-    eventListener: EventListener<TEventMap, TEventName>,
+  public once<TEventKind extends EventKind<TEventMap>>(
+    eventName: TEventKind,
+    eventListener: EventListener<TEventMap, TEventKind>,
   ): BoundOff {
-    const eventListenerWrapper: EventListener<TEventMap, TEventName> = async eventData => {
+    const eventListenerWrapper: EventListener<TEventMap, TEventKind> = async eventData => {
       this.off(eventName, eventListenerWrapper);
 
       await eventListener(eventData);
@@ -104,8 +123,8 @@ export class EventEmitter<TEventMap extends EventMap = any> {
     return this.on(eventName, eventListenerWrapper);
   }
 
-  public async wait<TEventName extends EventName<TEventMap>, TEventData extends EventData<TEventMap, TEventName>>(
-    eventName: TEventName,
+  public async wait<TEventKind extends EventKind<TEventMap>, TEventData extends EventData<TEventMap, TEventKind>>(
+    eventName: TEventKind,
     timeout?: number | null,
   ): Promise<TEventData> {
     return new Promise<TEventData>((resolve, reject) => {
@@ -128,29 +147,29 @@ export class EventEmitter<TEventMap extends EventMap = any> {
     });
   }
 
-  public getEventNames(): Array<EventName<TEventMap>> {
+  public getEventNames(): Array<EventKind<TEventMap>> {
     return [...this.eventListenerSetMap.keys()];
   }
 
-  protected getEventListeners<TEventName extends EventName<TEventMap>>(
-    eventName: TEventName,
-  ): Array<(eventData: EventData<TEventMap, TEventName>) => MaybePromise<void>> {
+  protected getEventListeners<TEventKind extends EventKind<TEventMap>>(
+    eventName: TEventKind,
+  ): Array<EventListener<TEventMap, TEventKind>> {
     const eventListenerSet = this.eventListenerSetMap.get(eventName);
 
     return eventListenerSet ? [...eventListenerSet] : [];
   }
 
-  public getEventListenerCount(eventName: EventName<TEventMap>): number {
-    return this.getEventListeners(eventName).length;
+  public getEventListenerCount(eventName: EventKind<TEventMap>): number {
+    return this.eventListenerSetMap.get(eventName)?.size ?? 0;
   }
 
   /**
    * Trigger an event asynchronously with some data. Listeners are called in the order they were added, but execute concurrently.
    * Returns a promise for when all the event listeners are done. Done meaning executed if synchronous or resolved when an async/promise-returning function. You usually wouldn't want to wait for this, but you could for example catch possible errors. If any of the listeners throw/reject, the returned promise will be rejected with the error, but the other listeners will not be affected.
    */
-  public async emit<TEventName extends EventName<TEventMap>>(
-    eventName: TEventName,
-    eventData: TEventMap[TEventName],
+  public async emit<TEventKind extends EventKind<TEventMap>>(
+    eventName: TEventKind,
+    eventData: TEventMap[TEventKind],
   ): Promise<void> {
     await Promise.all(this.getEventListeners(eventName).map(async eventListener => eventListener(eventData)));
   }
@@ -159,9 +178,9 @@ export class EventEmitter<TEventMap extends EventMap = any> {
    * Same as above, but it waits for each listener to resolve before triggering the next one. This can be useful if your events depend on each other.
    * If any of the listeners throw/reject, the returned promise will be rejected with the error and the remaining listeners will not be called.
    */
-  public async emitSerial<TEventName extends EventName<TEventMap>>(
-    eventName: TEventName,
-    eventData: TEventMap[TEventName],
+  public async emitSerial<TEventKind extends EventKind<TEventMap>>(
+    eventName: TEventKind,
+    eventData: TEventMap[TEventKind],
   ): Promise<void> {
     for (const eventListener of this.getEventListeners(eventName)) {
       await eventListener(eventData);

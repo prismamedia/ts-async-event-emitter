@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [2.2.0] - 2019-11-21
+
+### Added
+
+- Support "symbol" as event kind
+- Remove support of "numeric" event kind in "onConfig" method
+
 ## [2.1.0] - 2019-05-08
 
 ### Added

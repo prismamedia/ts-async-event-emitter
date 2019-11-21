@@ -10,28 +10,28 @@ Heavily inspired by https://github.com/sindresorhus/emittery#typescript, without
 import EventEmitter from '@prismamedia/ts-async-event-emitter';
 
 // We use an "Enum" to name the events
-enum Event {
+enum EventKind {
   Pre = 'pre',
   Post = 'post',
 }
 
 // We "type" the data carried by the events like this :
-const ee = new EventEmitter<{ [Event.Pre]: { at: number }; [Event.Post]: { took: number } }>();
+const ee = new EventEmitter<{ [EventKind.Pre]: { at: number }; [EventKind.Post]: { took: number } }>();
 
 // We can listen on events like this :
 // "offFirstPre" is a convenient method to unregister the listener later, see below
-const offFirstPre = ee.on(Event.Pre, ({ at }) => console.log({ first: at }));
-ee.on(Event.Pre, ({ at }) => console.log({ second: at * 2 }));
-ee.on(Event.Post, async ({ took }) => console.log({ took }));
+const offFirstPre = ee.on(EventKind.Pre, ({ at }) => console.log({ first: at }));
+ee.on(EventKind.Pre, ({ at }) => console.log({ second: at * 2 }));
+ee.on(EventKind.Post, async ({ took }) => console.log({ took }));
 
 // [...]
 
-await ee.emit(Event.Pre, { at: 2000 });
+await ee.emit(EventKind.Pre, { at: 2000 });
 // -> { any: 2000 }
 // -> { first: 2000 }
 // -> { second: 4000 }
 
-await ee.emit(Event.Post, { took: 100 });
+await ee.emit(EventKind.Post, { took: 100 });
 // -> { any: 100 }
 // -> { took: 100 }
 
@@ -39,7 +39,7 @@ await ee.emit(Event.Post, { took: 100 });
 offFirstPre();
 
 // Only the second listener remains
-await ee.emit(Event.Pre, { at: 10000 });
+await ee.emit(EventKind.Pre, { at: 10000 });
 // -> { any: 10000 }
 // -> { second: 20000 }
 ```
@@ -52,25 +52,27 @@ await ee.emit(Event.Pre, { at: 10000 });
 // Subscribe to a bunch of events
 ee.onConfig({
   // Several listeners for this event
-  [Event.Pre]: [() => console.log({ at }), () => console.log({ at: at * 2 })],
+  [EventKind.Pre]: [() => console.log({ at }), () => console.log({ at: at * 2 })],
   // Only one here
-  [Event.Post]: () => console.log({ took }),
+  [EventKind.Post]: () => console.log({ took }),
 });
 ```
+
+_Be aware that the "onConfig" method does not support "numeric" event kinds, as javascript transforms the "numeric" keys into "string"_
 
 ### once
 
 ```js
 // Subscribe to an event for only one execution
-ee.once(Event.Pre, ({ at }) => console.log({ at }));
+ee.once(EventKind.Pre, ({ at }) => console.log({ at }));
 ```
 
 ### wait
 
 ```js
 // Wait for an event to be triggered
-const eventData = await ee.wait(Event.Pre);
+const eventData = await ee.wait(EventKind.Pre);
 
 // Wait for an event to be triggered with a 100ms timeout (if the "timeout" is reached before the event has been triggered an Error will be thrown)
-const eventData = await ee.wait(Event.Pre, 100);
+const eventData = await ee.wait(EventKind.Pre, 100);
 ```

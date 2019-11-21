@@ -1,38 +1,61 @@
-import EventEmitter from '../';
+import { EventEmitter } from '../';
 
-enum Event {
+enum EventKind {
   Pre = 'pre',
   Post = 'post',
 }
 
+type EventMap = {
+  [EventKind.Pre]: { at: number };
+  [EventKind.Post]: { took: number };
+};
+
+enum NumericEventKind {
+  Pre,
+  Post,
+}
+
+type NumericEventMap = {
+  [NumericEventKind.Pre]: { at: number };
+  [NumericEventKind.Post]: { took: number };
+};
+
+const pre = Symbol('Pre');
+const post = Symbol('Post');
+
+type SymbolEventMap = {
+  [pre]: { at: number };
+  [post]: { took: number };
+};
+
 describe('EventEmitter', () => {
-  it('works', async done => {
-    const ee = new EventEmitter<{ [Event.Pre]: { at: number }; [Event.Post]: { took: number } }>();
+  it('works with string event names', async done => {
+    const ee = new EventEmitter<EventMap>();
 
     const result: any = {};
 
-    const firstOffPre = ee.on(Event.Pre, ({ at }) => {
+    const firstOffPre = ee.on(EventKind.Pre, ({ at }) => {
       result.first = at;
     });
 
-    const secondOffPre = ee.on(Event.Pre, ({ at }) => {
+    const secondOffPre = ee.on(EventKind.Pre, ({ at }) => {
       result.second = 2 * at;
     });
 
-    const offPost = ee.on(Event.Post, async ({ took }) => {
+    const offPost = ee.on(EventKind.Post, async ({ took }) => {
       result.took = took;
     });
 
     expect(result).toEqual({});
 
-    await ee.emit(Event.Pre, { at: 2000 });
+    await ee.emit(EventKind.Pre, { at: 2000 });
 
     expect(result).toEqual({
       first: 2000,
       second: 4000,
     });
 
-    await ee.emit(Event.Post, { took: 100 });
+    await ee.emit(EventKind.Post, { took: 100 });
 
     expect(result).toEqual({
       first: 2000,
@@ -54,7 +77,7 @@ describe('EventEmitter', () => {
 
     expect(ee.getEventNames()).toEqual([]);
 
-    await ee.emit(Event.Pre, { at: 10000 });
+    await ee.emit(EventKind.Pre, { at: 10000 });
 
     expect(ee.getEventNames()).toEqual([]);
 
@@ -67,43 +90,74 @@ describe('EventEmitter', () => {
     done();
   });
 
-  it('addConfig works', async done => {
-    const ee = new EventEmitter<{ [Event.Pre]: { at: number }; [Event.Post]: { took: number } }>();
+  it('works with numeric event names', () => {
+    const ee = new EventEmitter<NumericEventMap>();
 
-    const result: any = {};
+    const firstOffPre = ee.on(NumericEventKind.Pre, () => {});
+    const secondOffPre = ee.on(NumericEventKind.Pre, () => {});
+    const offPost = ee.on(NumericEventKind.Post, async () => {});
+
+    expect(ee.getEventNames()).toEqual([NumericEventKind.Pre, NumericEventKind.Post]);
+
+    firstOffPre();
+    expect(ee.getEventNames()).toEqual([NumericEventKind.Pre, NumericEventKind.Post]);
+
+    offPost();
+    expect(ee.getEventNames()).toEqual([NumericEventKind.Pre]);
+
+    secondOffPre();
+    expect(ee.getEventNames()).toEqual([]);
+  });
+
+  it('works with symbol event names', () => {
+    const ee = new EventEmitter<SymbolEventMap>();
+
+    const firstOffPre = ee.on(pre, () => {});
+    const secondOffPre = ee.on(pre, () => {});
+    const offPost = ee.on(post, async () => {});
+
+    expect(ee.getEventNames()).toEqual([pre, post]);
+
+    firstOffPre();
+    expect(ee.getEventNames()).toEqual([pre, post]);
+
+    offPost();
+    expect(ee.getEventNames()).toEqual([pre]);
+
+    secondOffPre();
+    expect(ee.getEventNames()).toEqual([]);
+  });
+
+  it('addConfig works with string event names', () => {
+    const ee = new EventEmitter<EventMap>();
 
     const offs = ee.onConfig({
       // Several listeners for this event
-      [Event.Pre]: [
-        ({ at }) => {
-          result.firstPreCall = at;
-        },
-        ({ at }) => {
-          result.secondPreCall = at;
-        },
-      ],
-
+      [EventKind.Pre]: [() => {}, () => {}],
       // Only one here
-      [Event.Post]: ({ took }) => {
-        result.firstPostCall = took;
-      },
+      [EventKind.Post]: () => {},
     });
 
-    expect(ee.getEventNames()).toEqual(['pre', 'post']);
-
-    await Promise.all([ee.emit(Event.Pre, { at: 10 }), ee.emit(Event.Post, { took: 100 })]);
-
-    expect(result).toEqual({
-      firstPostCall: 100,
-      firstPreCall: 10,
-      secondPreCall: 10,
-    });
+    expect(ee.getEventNames()).toEqual([EventKind.Pre, EventKind.Post]);
 
     offs.forEach(off => off());
-
     expect(ee.getEventNames()).toEqual([]);
+  });
 
-    done();
+  it('addConfig works with symbol event names', () => {
+    const ee = new EventEmitter<SymbolEventMap>();
+
+    const offs = ee.onConfig({
+      // Several listeners for this event
+      [pre]: [() => {}, () => {}],
+      // Only one here
+      [post]: () => {},
+    });
+
+    expect(ee.getEventNames()).toEqual([pre, post]);
+
+    offs.forEach(off => off());
+    expect(ee.getEventNames()).toEqual([]);
   });
 
   it('works without typing', async done => {
@@ -117,27 +171,27 @@ describe('EventEmitter', () => {
   });
 
   it('once works', async done => {
-    const ee = new EventEmitter<{ [Event.Pre]: {} }>();
+    const ee = new EventEmitter<{ [EventKind.Pre]: {} }>();
 
     let count: number = 0;
 
-    ee.once(Event.Pre, () => {
+    ee.once(EventKind.Pre, () => {
       count++;
     });
 
-    ee.once(Event.Pre, () => {
+    ee.once(EventKind.Pre, () => {
       count++;
     });
 
     expect(count).toEqual(0);
     expect(ee.getEventNames()).toEqual(['pre']);
 
-    await ee.emit(Event.Pre, {});
+    await ee.emit(EventKind.Pre, {});
 
     expect(count).toEqual(2);
     expect(ee.getEventNames()).toEqual([]);
 
-    await ee.emit(Event.Pre, {});
+    await ee.emit(EventKind.Pre, {});
 
     expect(count).toEqual(2);
     expect(ee.getEventNames()).toEqual([]);
@@ -146,19 +200,19 @@ describe('EventEmitter', () => {
   });
 
   it('wait works', async done => {
-    const ee = new EventEmitter<{ [Event.Pre]: {} }>();
+    const ee = new EventEmitter<{ [EventKind.Pre]: {} }>();
 
-    await expect(ee.wait(Event.Pre, 100)).rejects.toMatchInlineSnapshot(
+    await expect(ee.wait(EventKind.Pre, 100)).rejects.toMatchInlineSnapshot(
       `"Has waited for the \\"pre\\" event more than 100ms"`,
     );
 
     expect(ee.getEventNames()).toEqual([]);
 
-    const wait = ee.wait(Event.Pre, 100);
+    const wait = ee.wait(EventKind.Pre, 100);
 
     expect(ee.getEventNames()).toEqual(['pre']);
 
-    const [waited] = await Promise.all([wait, ee.emit(Event.Pre, { test: 'wait' })]);
+    const [waited] = await Promise.all([wait, ee.emit(EventKind.Pre, { test: 'wait' })]);
 
     expect(waited).toEqual({
       test: 'wait',
