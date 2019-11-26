@@ -1,5 +1,5 @@
 .npmrc
 *.log
-dist/
-node_modules/
+dist
+node_modules
 package-lock.json
