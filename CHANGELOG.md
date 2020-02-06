@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [3.0.0] - 2020-02-06
+
+### Removed
+
+- Drop support for Node 10
+
+### Added
+
+- Added configuration for VSCode
+- Added configuration for VSCode's "remote container" runtime
+
+### Changed
+
+- Changed Prettier's config
+- Upgraded dependencies
+
 ## [2.2.0] - 2019-11-21
 
 ### Added

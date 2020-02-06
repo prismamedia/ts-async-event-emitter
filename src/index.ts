@@ -1,8 +1,8 @@
 import { clearTimeout, setTimeout } from 'timers';
 
 type Maybe<T> = undefined | null | T;
-type MaybeArray<T> = T | Array<T>;
-type MaybePromise<T> = T | Promise<T>;
+type ValueOrArray<T> = T | Array<T>;
+type ValueOrPromise<T> = T | Promise<T>;
 
 export type EventMap = Record<keyof any, any>;
 
@@ -16,12 +16,12 @@ export type EventData<
 export type EventListener<
   TEventMap extends EventMap,
   TEventKind extends EventKind<TEventMap> = EventKind<TEventMap>
-> = (eventData: EventData<TEventMap, TEventKind>) => MaybePromise<void>;
+> = (eventData: EventData<TEventMap, TEventKind>) => ValueOrPromise<void>;
 
 export type EventConfig<
   TEventMap extends EventMap,
   TEventKind extends EventKind<TEventMap> = EventKind<TEventMap>
-> = Maybe<MaybeArray<Maybe<EventListener<TEventMap, TEventKind>>>>;
+> = Maybe<ValueOrArray<Maybe<EventListener<TEventMap, TEventKind>>>>;
 
 export type EventConfigMap<TEventMap extends EventMap> = {
   [TEventKind in EventKind<TEventMap>]?: EventKind<TEventMap> extends number
@@ -33,7 +33,10 @@ export type EventConfigMap<TEventMap extends EventMap> = {
 export type BoundOff = () => void;
 
 export class EventEmitter<TEventMap extends EventMap = any> {
-  protected eventListenerSetMap = new Map<EventKind<TEventMap>, Set<EventListener<TEventMap, any>>>();
+  protected eventListenerSetMap = new Map<
+    EventKind<TEventMap>,
+    Set<EventListener<TEventMap, any>>
+  >();
 
   public constructor(config?: EventConfigMap<TEventMap> | null) {
     this.onConfig(config);
@@ -51,7 +54,11 @@ export class EventEmitter<TEventMap extends EventMap = any> {
   ): void {
     if (typeof eventName !== 'undefined' && eventListener) {
       const eventListenerSet = this.eventListenerSetMap.get(eventName);
-      if (eventListenerSet && eventListenerSet.delete(eventListener) && eventListenerSet.size === 0) {
+      if (
+        eventListenerSet &&
+        eventListenerSet.delete(eventListener) &&
+        eventListenerSet.size === 0
+      ) {
         this.eventListenerSetMap.delete(eventName);
       }
     } else if (typeof eventName !== 'undefined') {
@@ -93,7 +100,9 @@ export class EventEmitter<TEventMap extends EventMap = any> {
       ] as EventKind<TEventMap>[]) {
         const eventConfig = config[eventName];
         if (eventConfig != null) {
-          const eventListeners = Array.isArray(eventConfig) ? eventConfig : [eventConfig];
+          const eventListeners = Array.isArray(eventConfig)
+            ? eventConfig
+            : [eventConfig];
           for (const eventListener of eventListeners) {
             if (eventListener != null) {
               offs.push(this.on(eventName, eventListener));
@@ -114,7 +123,10 @@ export class EventEmitter<TEventMap extends EventMap = any> {
     eventName: TEventKind,
     eventListener: EventListener<TEventMap, TEventKind>,
   ): BoundOff {
-    const eventListenerWrapper: EventListener<TEventMap, TEventKind> = async eventData => {
+    const eventListenerWrapper: EventListener<
+      TEventMap,
+      TEventKind
+    > = async eventData => {
       this.off(eventName, eventListenerWrapper);
 
       await eventListener(eventData);
@@ -123,10 +135,10 @@ export class EventEmitter<TEventMap extends EventMap = any> {
     return this.on(eventName, eventListenerWrapper);
   }
 
-  public async wait<TEventKind extends EventKind<TEventMap>, TEventData extends EventData<TEventMap, TEventKind>>(
-    eventName: TEventKind,
-    timeout?: number | null,
-  ): Promise<TEventData> {
+  public async wait<
+    TEventKind extends EventKind<TEventMap>,
+    TEventData extends EventData<TEventMap, TEventKind>
+  >(eventName: TEventKind, timeout?: number | null): Promise<TEventData> {
     return new Promise<TEventData>((resolve, reject) => {
       let off: BoundOff;
 
@@ -135,7 +147,9 @@ export class EventEmitter<TEventMap extends EventMap = any> {
           ? setTimeout(() => {
               off && off();
 
-              reject(`Has waited for the "${eventName}" event more than ${timeout}ms`);
+              reject(
+                `Has waited for the "${eventName}" event more than ${timeout}ms`,
+              );
             }, timeout)
           : null;
 
@@ -171,7 +185,11 @@ export class EventEmitter<TEventMap extends EventMap = any> {
     eventName: TEventKind,
     eventData: TEventMap[TEventKind],
   ): Promise<void> {
-    await Promise.all(this.getEventListeners(eventName).map(async eventListener => eventListener(eventData)));
+    await Promise.all(
+      this.getEventListeners(eventName).map(async eventListener =>
+        eventListener(eventData),
+      ),
+    );
   }
 
   /**

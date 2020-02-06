@@ -19,12 +19,15 @@
     "test:watch": "yarn run test --watchAll",
     "prettier": "prettier --write \"**/*.ts\""
   },
+  "engines": {
+    "node": ">=12"
+  },
   "devDependencies": {
-    "@types/jest": "^24.0.23",
-    "@types/node": "^12.12.11",
-    "jest": "^24.9.0",
+    "@types/jest": "^25.1.1",
+    "@types/node": "^13.7.0",
+    "jest": "^25.1.0",
     "prettier": "^1.19.1",
-    "ts-jest": "^24.1.0",
-    "typescript": "^3.7.2"
+    "ts-jest": "^25.2.0",
+    "typescript": "^3.7.5"
   }
 }

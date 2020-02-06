@@ -97,10 +97,16 @@ describe('EventEmitter', () => {
     const secondOffPre = ee.on(NumericEventKind.Pre, () => {});
     const offPost = ee.on(NumericEventKind.Post, async () => {});
 
-    expect(ee.getEventNames()).toEqual([NumericEventKind.Pre, NumericEventKind.Post]);
+    expect(ee.getEventNames()).toEqual([
+      NumericEventKind.Pre,
+      NumericEventKind.Post,
+    ]);
 
     firstOffPre();
-    expect(ee.getEventNames()).toEqual([NumericEventKind.Pre, NumericEventKind.Post]);
+    expect(ee.getEventNames()).toEqual([
+      NumericEventKind.Pre,
+      NumericEventKind.Post,
+    ]);
 
     offPost();
     expect(ee.getEventNames()).toEqual([NumericEventKind.Pre]);
@@ -212,7 +218,10 @@ describe('EventEmitter', () => {
 
     expect(ee.getEventNames()).toEqual(['pre']);
 
-    const [waited] = await Promise.all([wait, ee.emit(EventKind.Pre, { test: 'wait' })]);
+    const [waited] = await Promise.all([
+      wait,
+      ee.emit(EventKind.Pre, { test: 'wait' }),
+    ]);
 
     expect(waited).toEqual({
       test: 'wait',
