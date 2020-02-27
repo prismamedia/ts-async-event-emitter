@@ -11,6 +11,7 @@ services:
       - ~/.bash_history:/root/.bash_history
       - ..:/workspace:delegated
       - yarn_cache:/var/cache/yarn
+    restart: 'no'
 
 volumes:
   yarn_cache: ~
