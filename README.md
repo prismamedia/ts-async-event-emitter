@@ -46,19 +46,22 @@ await ee.emit(EventKind.Pre, { at: 10000 });
 
 ## Other convenient methods are available :
 
-### onConfig
+### on "config"
 
 ```js
 // Subscribe to a bunch of events
-ee.onConfig({
+ee.on({
   // Several listeners for this event
-  [EventKind.Pre]: [() => console.log({ at }), () => console.log({ at: at * 2 })],
+  [EventKind.Pre]: [
+    () => console.log({ at }),
+    () => console.log({ at: at * 2 }),
+  ],
   // Only one here
   [EventKind.Post]: () => console.log({ took }),
 });
 ```
 
-_Be aware that the "onConfig" method does not support "numeric" event kinds, as javascript transforms the "numeric" keys into "string"_
+_Be aware that the on "config" method does not support "numeric" event kinds, as javascript transforms the "numeric" keys into "string"_
 
 ### once
 

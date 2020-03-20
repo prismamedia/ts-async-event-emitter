@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/).
 
 - Upgraded dependencies
 
-## [3.0.0] - 2020-02-06
+## [3.0.1] - 2020-03-20
 
 ### Removed
 

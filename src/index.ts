@@ -8,6 +8,10 @@ export type EventMap = Record<keyof any, any>;
 
 export type EventKind<TEventMap extends EventMap> = keyof TEventMap;
 
+export type EventKindWithoutNumericEntries<
+  TEventMap extends EventMap
+> = Exclude<EventKind<TEventMap>, number>;
+
 export type EventData<
   TEventMap extends EventMap,
   TEventKind extends EventKind<TEventMap> = EventKind<TEventMap>
@@ -24,10 +28,11 @@ export type EventConfig<
 > = Maybe<ValueOrArray<Maybe<EventListener<TEventMap, TEventKind>>>>;
 
 export type EventConfigMap<TEventMap extends EventMap> = {
-  [TEventKind in EventKind<TEventMap>]?: EventKind<TEventMap> extends number
-    ? // Forbid usage of "numeric" key because javascript does not support it: they are transform into "string"
-      never
-    : EventConfig<TEventMap, TEventKind>;
+  // Forbid usage of "numeric" key because javascript does not support it: they are transform into "string"
+  [TEventKind in EventKindWithoutNumericEntries<TEventMap>]?: EventConfig<
+    TEventMap,
+    TEventKind
+  >;
 };
 
 export type BoundOff = () => void;
@@ -39,7 +44,7 @@ export class EventEmitter<TEventMap extends EventMap = any> {
   >();
 
   public constructor(config?: EventConfigMap<TEventMap> | null) {
-    this.onConfig(config);
+    this.on(config);
   }
 
   /**
@@ -75,44 +80,58 @@ export class EventEmitter<TEventMap extends EventMap = any> {
   public on<TEventKind extends EventKind<TEventMap>>(
     eventName: TEventKind,
     eventListener: EventListener<TEventMap, TEventKind>,
-  ): BoundOff {
-    let eventListenerSet = this.eventListenerSetMap.get(eventName);
-    if (!eventListenerSet) {
-      this.eventListenerSetMap.set(eventName, (eventListenerSet = new Set()));
-    }
-
-    eventListenerSet.add(eventListener);
-
-    return this.off.bind(this, eventName, eventListener as any);
-  }
+  ): BoundOff;
 
   /**
    * Subscribe to a bunch of events.
    * Returns an array of unsubscribe methods
    */
-  public onConfig(config?: EventConfigMap<TEventMap> | null): BoundOff[] {
-    const offs: BoundOff[] = [];
+  public on(config: EventConfigMap<TEventMap> | null | undefined): BoundOff[];
+  public on(): BoundOff[];
 
-    if (config != null) {
-      for (const eventName of [
-        ...Object.getOwnPropertyNames(config),
-        ...Object.getOwnPropertySymbols(config),
-      ] as EventKind<TEventMap>[]) {
-        const eventConfig = config[eventName];
-        if (eventConfig != null) {
-          const eventListeners = Array.isArray(eventConfig)
-            ? eventConfig
-            : [eventConfig];
-          for (const eventListener of eventListeners) {
-            if (eventListener != null) {
-              offs.push(this.on(eventName, eventListener));
+  public on(
+    ...args:
+      | [EventKind<TEventMap>, EventListener<TEventMap>]
+      | [EventConfigMap<TEventMap> | null | undefined]
+  ): any {
+    if (args.length === 2) {
+      const [eventName, eventListener] = args;
+
+      let eventListenerSet = this.eventListenerSetMap.get(eventName);
+      if (!eventListenerSet) {
+        this.eventListenerSetMap.set(eventName, (eventListenerSet = new Set()));
+      }
+
+      eventListenerSet.add(eventListener);
+
+      return this.off.bind(this, eventName, eventListener as any);
+    } else {
+      const [config] = args;
+
+      const offs: BoundOff[] = [];
+
+      if (config != null) {
+        for (const eventName of [
+          ...Object.getOwnPropertyNames(config),
+          ...Object.getOwnPropertySymbols(config),
+        ] as EventKindWithoutNumericEntries<TEventMap>[]) {
+          const eventConfig = config[eventName];
+          if (eventConfig != null) {
+            const eventListeners = Array.isArray(eventConfig)
+              ? eventConfig
+              : [eventConfig];
+
+            for (const eventListener of eventListeners) {
+              if (eventListener != null) {
+                offs.push(this.on(eventName, eventListener as any));
+              }
             }
           }
         }
       }
-    }
 
-    return offs;
+      return offs;
+    }
   }
 
   /**
@@ -148,7 +167,9 @@ export class EventEmitter<TEventMap extends EventMap = any> {
               off && off();
 
               reject(
-                `Has waited for the "${eventName}" event more than ${timeout}ms`,
+                new Error(
+                  `Has waited for the "${eventName}" event more than ${timeout}ms`,
+                ),
               );
             }, timeout)
           : null;

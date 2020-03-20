@@ -134,10 +134,10 @@ describe('EventEmitter', () => {
     expect(ee.getEventNames()).toEqual([]);
   });
 
-  it('addConfig works with string event names', () => {
+  it('on "config" works with string event names', () => {
     const ee = new EventEmitter<EventMap>();
 
-    const offs = ee.onConfig({
+    const offs = ee.on({
       // Several listeners for this event
       [EventKind.Pre]: [() => {}, () => {}],
       // Only one here
@@ -150,10 +150,10 @@ describe('EventEmitter', () => {
     expect(ee.getEventNames()).toEqual([]);
   });
 
-  it('addConfig works with symbol event names', () => {
+  it('on "config" works with symbol event names', () => {
     const ee = new EventEmitter<SymbolEventMap>();
 
-    const offs = ee.onConfig({
+    const offs = ee.on({
       // Several listeners for this event
       [pre]: [() => {}, () => {}],
       // Only one here
@@ -209,7 +209,7 @@ describe('EventEmitter', () => {
     const ee = new EventEmitter<{ [EventKind.Pre]: {} }>();
 
     await expect(ee.wait(EventKind.Pre, 100)).rejects.toMatchInlineSnapshot(
-      `"Has waited for the \\"pre\\" event more than 100ms"`,
+      `[Error: Has waited for the "pre" event more than 100ms]`,
     );
 
     expect(ee.getEventNames()).toEqual([]);
