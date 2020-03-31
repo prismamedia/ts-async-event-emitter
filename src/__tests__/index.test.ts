@@ -1,4 +1,4 @@
-import { EventEmitter } from '../';
+import { errorMonitor, EventEmitter } from '../';
 
 enum EventKind {
   Pre = 'pre',
@@ -29,7 +29,7 @@ type SymbolEventMap = {
 };
 
 describe('EventEmitter', () => {
-  it('works with string event names', async done => {
+  it('works with string event names', async (done) => {
     const ee = new EventEmitter<EventMap>();
 
     const result: any = {};
@@ -142,11 +142,17 @@ describe('EventEmitter', () => {
       [EventKind.Pre]: [() => {}, () => {}],
       // Only one here
       [EventKind.Post]: () => {},
+
+      error: (error) => {},
     });
 
-    expect(ee.getEventNames()).toEqual([EventKind.Pre, EventKind.Post]);
+    expect(ee.getEventNames()).toEqual([
+      EventKind.Pre,
+      EventKind.Post,
+      'error',
+    ]);
 
-    offs.forEach(off => off());
+    offs.forEach((off) => off());
     expect(ee.getEventNames()).toEqual([]);
   });
 
@@ -158,15 +164,17 @@ describe('EventEmitter', () => {
       [pre]: [() => {}, () => {}],
       // Only one here
       [post]: () => {},
+      // Only one for the errorMonitor
+      [errorMonitor]: () => {},
     });
 
-    expect(ee.getEventNames()).toEqual([pre, post]);
+    expect(ee.getEventNames()).toEqual([pre, post, errorMonitor]);
 
-    offs.forEach(off => off());
+    offs.forEach((off) => off());
     expect(ee.getEventNames()).toEqual([]);
   });
 
-  it('works without typing', async done => {
+  it('works without typing', async (done) => {
     const ee = new EventEmitter();
 
     ee.on('notdDefinedEventName', () => {});
@@ -176,7 +184,7 @@ describe('EventEmitter', () => {
     done();
   });
 
-  it('once works', async done => {
+  it('once works', async (done) => {
     const ee = new EventEmitter<{ [EventKind.Pre]: {} }>();
 
     let count: number = 0;
@@ -205,7 +213,7 @@ describe('EventEmitter', () => {
     done();
   });
 
-  it('wait works', async done => {
+  it('wait works', async (done) => {
     const ee = new EventEmitter<{ [EventKind.Pre]: {} }>();
 
     await expect(ee.wait(EventKind.Pre, 100)).rejects.toMatchInlineSnapshot(
@@ -228,6 +236,55 @@ describe('EventEmitter', () => {
     });
 
     expect(ee.getEventNames()).toEqual([]);
+
+    done();
+  });
+
+  it('handle errors properly', async (done) => {
+    const config = {
+      myEventName: () => {
+        throw new Error('An error');
+      },
+    };
+
+    const eventEmitterWithoutErrorListener = new EventEmitter(config);
+
+    await expect(
+      eventEmitterWithoutErrorListener.emit('myEventName', null),
+    ).rejects.toThrowErrorMatchingInlineSnapshot(`"An error"`);
+
+    const eventEmitterWithErrorMonitorListener = new EventEmitter({
+      ...config,
+
+      [errorMonitor]: (error) => {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toEqual('An error');
+      },
+    });
+
+    await expect(
+      eventEmitterWithErrorMonitorListener.emit('myEventName', null),
+    ).rejects.toThrowErrorMatchingInlineSnapshot(`"An error"`);
+
+    const eventEmitterWithErrorListener = new EventEmitter({
+      ...config,
+
+      [errorMonitor]: (error) => {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toEqual('An error');
+      },
+
+      error: (error) => {
+        expect(error).toBeInstanceOf(Error);
+        expect(error.message).toEqual('An error');
+      },
+    });
+
+    await expect(
+      eventEmitterWithErrorListener.emit('myEventName', null),
+    ).resolves.toBeUndefined();
+
+    expect.assertions(9);
 
     done();
   });

@@ -1,14 +1,12 @@
 {
   "compilerOptions": {
-    "esModuleInterop": true,
     "experimentalDecorators": true,
     "incremental": true,
-    "noImplicitAny": true,
     "sourceMap": true,
     "strict": true,
     "moduleResolution": "Node",
     "lib": ["ES2019", "ES2020.String", "ESNext.BigInt"],
-    "target": "ES2020",
+    "target": "ES2019",
     "rootDir": "src"
   }
 }

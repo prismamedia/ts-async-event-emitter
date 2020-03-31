@@ -8,8 +8,8 @@ services:
       YARN_CACHE_FOLDER: /var/cache/yarn
     working_dir: /workspace
     volumes:
-      - ~/.bash_history:/root/.bash_history
       - ..:/workspace:delegated
+      - ~/.bash_history:/root/.bash_history
       - yarn_cache:/var/cache/yarn
     restart: 'no'
 

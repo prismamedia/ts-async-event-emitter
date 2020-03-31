@@ -5,10 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
-## [Unreleased]
+## [3.0.2] - 2020-04-10
 
 ### Changed
 
+- Handled errors properly (cf: https://nodejs.org/api/events.html#events_error_events )
 - Upgraded dependencies
 
 ## [3.0.1] - 2020-03-20
