@@ -1,8 +1,8 @@
 {
-  "name": "Typescript async event emitter",
-  "dockerComposeFile": ["docker-compose.yml"],
+  "name": "TypeScript Async Event Emitter",
+  "dockerComposeFile": ["../docker-compose.yml", "docker-compose.yml"],
   "service": "lib",
   "workspaceFolder": "/workspace",
-  "postCreateCommand": "yarn install",
-  "extensions": ["esbenp.prettier-vscode"]
+  "postCreateCommand": "yarn install --immutable --immutable-cache",
+  "extensions": ["arcanis.vscode-zipfs", "esbenp.prettier-vscode"]
 }

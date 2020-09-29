@@ -1,7 +1,8 @@
 {
-  "extends": "./tsconfig.base",
+  "extends": "@tsconfig/node12",
   "compilerOptions": {
-    "module": "CommonJS",
+    "experimentalDecorators": true,
+    "rootDir": "src",
     "outDir": "dist/cjs",
     "declaration": true,
     "declarationMap": true,
