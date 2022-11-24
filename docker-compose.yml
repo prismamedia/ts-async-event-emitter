@@ -1,13 +1,14 @@
 version: '3.8'
 
 services:
-
   lib:
-    image: node:12
+    image: node:16
+    command: sleep infinity
     working_dir: /workspace
     volumes:
       - .:/workspace:delegated
       - ~/.bash_history:/root/.bash_history
+      - ~/.bash_history:/root/.ash_history
     logging:
       options:
         max-size: 50k

@@ -3,15 +3,19 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build-test-and-publish:
+  setup-compile-test-and-publish:
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
+
       matrix:
-        node: ['12', '14']
+        node:
+          - 16
+          - 18
+
         include:
-          - node: '12'
+          - node: 16
             publish: true
             continue-on-error: false
 
@@ -22,15 +26,15 @@ jobs:
 
     steps:
       - name: Checkout the code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v3
         with:
           fetch-depth: 1
 
-      - name: Validate dependencies
-        run: yarn install --immutable --immutable-cache
+      - name: Install the dependencies
+        run: yarn install --immutable
 
-      - name: Build
-        run: yarn run build
+      - name: Compile the code
+        run: yarn run compile
 
       - name: Test
         run: yarn run test
