@@ -1,11 +1,11 @@
 import { errorMonitor } from 'node:events';
 import { clearTimeout, setTimeout } from 'node:timers';
+import type { Promisable } from 'type-fest';
 
 export { errorMonitor };
 
 type Maybe<T> = undefined | null | T;
 type ValueOrArray<T> = T | Array<T>;
-type ValueOrPromise<T> = T | Promise<T>;
 
 export type EventDataByName = Record<keyof any, any>;
 
@@ -28,7 +28,7 @@ export type EventData<
 export type EventListener<
   TDataByName extends EventDataByName,
   TName extends EventName<TDataByName>,
-> = (eventData: EventData<TDataByName, TName>) => ValueOrPromise<void>;
+> = (eventData: EventData<TDataByName, TName>) => Promisable<void>;
 
 export type EventConfig<
   TDataByName extends EventDataByName,

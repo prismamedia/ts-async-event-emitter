@@ -37,6 +37,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/sdks", "npm:3.0.0-rc.31"],\
             ["jest", "virtual:17627573f9629049474bda54b51d84759882d90988f7076e8008026bb2320a07ece373b4a09a0c617ae620f2c3a39b820786514fb57846ffff1d87f90ae59a3c#npm:29.3.1"],\
             ["prettier", "npm:2.8.0"],\
+            ["type-fest", "npm:3.2.0"],\
             ["typescript", "patch:typescript@npm%3A4.9.3#~builtin<compat/typescript>::version=4.9.3&hash=d73830"]\
           ],\
           "linkType": "SOFT"\
@@ -1273,6 +1274,7 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
             ["@yarnpkg/sdks", "npm:3.0.0-rc.31"],\
             ["jest", "virtual:17627573f9629049474bda54b51d84759882d90988f7076e8008026bb2320a07ece373b4a09a0c617ae620f2c3a39b820786514fb57846ffff1d87f90ae59a3c#npm:29.3.1"],\
             ["prettier", "npm:2.8.0"],\
+            ["type-fest", "npm:3.2.0"],\
             ["typescript", "patch:typescript@npm%3A4.9.3#~builtin<compat/typescript>::version=4.9.3&hash=d73830"]\
           ],\
           "linkType": "SOFT"\
@@ -5161,6 +5163,13 @@ function $$SETUP_STATE(hydrateRuntimeState, basePath) {
           "packageLocation": "./.yarn/cache/type-fest-npm-0.21.3-5ff2a9c6fd-e6b32a3b38.zip/node_modules/type-fest/",\
           "packageDependencies": [\
             ["type-fest", "npm:0.21.3"]\
+          ],\
+          "linkType": "HARD"\
+        }],\
+        ["npm:3.2.0", {\
+          "packageLocation": "./.yarn/cache/type-fest-npm-3.2.0-e8b68ee9a0-2668b62e8d.zip/node_modules/type-fest/",\
+          "packageDependencies": [\
+            ["type-fest", "npm:3.2.0"]\
           ],\
           "linkType": "HARD"\
         }]\
