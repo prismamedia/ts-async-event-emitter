@@ -135,7 +135,7 @@ describe('EventEmitter', () => {
   it('on "config" works with string event names', () => {
     const ee = new AsyncEventEmitter<EventMap>();
 
-    const offs = ee.on({
+    const off = ee.on({
       // Several listeners for this event
       [EventName.Pre]: [() => {}, () => {}],
       // Only one here
@@ -146,14 +146,14 @@ describe('EventEmitter', () => {
 
     expect(ee.eventNames()).toEqual([EventName.Pre, EventName.Post, 'error']);
 
-    offs.forEach((off) => off());
+    off();
     expect(ee.eventNames()).toEqual([]);
   });
 
   it('on "config" works with symbol event names', () => {
     const ee = new AsyncEventEmitter<SymbolEventMap>();
 
-    const offs = ee.on({
+    const off = ee.on({
       // Several listeners for this event
       [pre]: [() => {}, () => {}],
       // Only one here
@@ -164,7 +164,7 @@ describe('EventEmitter', () => {
 
     expect(ee.eventNames()).toEqual([pre, post, errorMonitor]);
 
-    offs.forEach((off) => off());
+    off();
     expect(ee.eventNames()).toEqual([]);
   });
 

@@ -97,13 +97,13 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
    * Subscribe to a bunch of events.
    * Returns an array of unsubscribe methods
    */
-  public on(config: EventConfigByName<TDataByName>): BoundOff[];
+  public on(config: EventConfigByName<TDataByName>): BoundOff;
 
   public on<TName extends EventName<TDataByName>>(
     ...args:
       | [TName, EventListener<TDataByName, TName>]
       | [EventConfigByName<TDataByName>]
-  ): ValueOrArray<BoundOff> {
+  ): BoundOff {
     if (args.length === 2) {
       const [eventName, listener] = args;
 
@@ -163,7 +163,7 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
         }
       }
 
-      return offs;
+      return () => offs.map((off) => off());
     }
   }
 
