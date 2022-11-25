@@ -20,11 +20,6 @@ export type ErrorEventDataByName = {
 export type EventName<TDataByName extends EventDataByName> =
   keyof (TDataByName & ErrorEventDataByName);
 
-type EventNameExcludingNumber<TDataByName extends EventDataByName> = Exclude<
-  EventName<TDataByName>,
-  number
->;
-
 export type EventData<
   TDataByName extends EventDataByName,
   TName extends EventName<TDataByName>,
@@ -33,12 +28,17 @@ export type EventData<
 export type EventListener<
   TDataByName extends EventDataByName,
   TName extends EventName<TDataByName>,
-> = (data: EventData<TDataByName, TName>) => ValueOrPromise<void>;
+> = (eventData: EventData<TDataByName, TName>) => ValueOrPromise<void>;
 
 export type EventConfig<
   TDataByName extends EventDataByName,
   TName extends EventName<TDataByName>,
 > = ValueOrArray<Maybe<EventListener<TDataByName, TName>>>;
+
+type EventNameExcludingNumber<TDataByName extends EventDataByName> = Exclude<
+  EventName<TDataByName>,
+  number
+>;
 
 export type EventConfigByName<TDataByName extends EventDataByName> = {
   // Forbid usage of "numeric" key because javascript does not support it: they are transform into "string"
@@ -123,14 +123,12 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
       const wrappedListener: EventListener<TDataByName, TName> =
         eventName === 'error' || eventName === errorMonitor
           ? listener
-          : async (data) => {
+          : async (eventData) => {
               try {
-                await listener(data);
+                await listener(eventData);
               } catch (error) {
                 // cf: https://nodejs.org/api/events.html#events_error_events
-                if (this.#listenersByName.get(errorMonitor)?.size) {
-                  await this.emit(errorMonitor, error);
-                }
+                await this.emit(errorMonitor, error);
 
                 if (this.#listenersByName.get('error')?.size) {
                   await this.emit('error', error);
@@ -177,10 +175,10 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     eventName: TName,
     listener: EventListener<TDataByName, TName>,
   ): BoundOff {
-    const off = this.on(eventName, async (data) => {
+    const off = this.on(eventName, async (eventData) => {
       off();
 
-      await listener(data);
+      await listener(eventData);
     });
 
     return off;
@@ -206,13 +204,13 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
           );
         }, timeout);
 
-        off = this.once(eventName, (data) => {
+        off = this.once(eventName, (eventData) => {
           clearTimeout(timeoutId);
 
-          resolve(data);
+          resolve(eventData);
         });
       } else {
-        this.once(eventName, (data) => resolve(data));
+        this.once(eventName, (eventData) => resolve(eventData));
       }
     });
   }
@@ -239,23 +237,10 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
    */
   public async emit<TName extends EventName<TDataByName>>(
     eventName: TName,
-    data: EventData<TDataByName, TName>,
+    eventData: EventData<TDataByName, TName>,
   ): Promise<void> {
     await Promise.all(
-      this.eventListeners(eventName).map((listener) => listener(data)),
+      this.eventListeners(eventName).map((listener) => listener(eventData)),
     );
-  }
-
-  /**
-   * Same as above, but it waits for each listener to resolve before triggering the next one. This can be useful if your events depend on each other.
-   * If any of the listeners throw/reject, the returned promise will be rejected with the error and the remaining listeners will not be called.
-   */
-  public async emitSerial<TName extends EventName<TDataByName>>(
-    eventName: TName,
-    data: EventData<TDataByName, TName>,
-  ): Promise<void> {
-    for (const listener of this.eventListeners(eventName)) {
-      await listener(data);
-    }
   }
 }
