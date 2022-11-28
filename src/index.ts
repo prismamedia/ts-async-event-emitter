@@ -1,5 +1,6 @@
 import { errorMonitor } from 'node:events';
 import { clearTimeout, setTimeout } from 'node:timers';
+import { inspect } from 'node:util';
 import type { Promisable } from 'type-fest';
 
 export { errorMonitor };
@@ -108,11 +109,15 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
       const [eventName, listener] = args;
 
       if (!['number', 'string', 'symbol'].includes(typeof eventName)) {
-        throw new TypeError(`Expect a number, a string or a symbol`);
+        throw new TypeError(
+          `Expects to be a number, a string or a symbol, got: ${inspect(
+            eventName,
+          )}`,
+        );
       }
 
       if (typeof listener !== 'function') {
-        throw new TypeError(`Expect a function`);
+        throw new TypeError(`Expects a function, got: ${inspect(listener)}`);
       }
 
       let listeners = this.#listenersByName.get(eventName);
@@ -147,6 +152,12 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
       const offs: BoundOff[] = [];
 
       if (configsByName != null) {
+        if (typeof configsByName !== 'object') {
+          throw new TypeError(
+            `Expects an object, got: ${inspect(configsByName)}`,
+          );
+        }
+
         for (const eventName of [
           ...Object.getOwnPropertyNames(configsByName),
           ...Object.getOwnPropertySymbols(configsByName),
