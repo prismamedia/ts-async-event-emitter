@@ -98,7 +98,14 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
    * Subscribe to a bunch of events.
    * Returns an array of unsubscribe methods
    */
-  public on(config: EventConfigByName<TDataByName>): BoundOff;
+  public on(
+    config: EventConfigByName<TDataByName> | null | undefined,
+  ): BoundOff;
+
+  /**
+   * Do nothing
+   */
+  public on(): BoundOff;
 
   public on<TName extends EventName<TDataByName>>(
     ...args:
