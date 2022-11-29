@@ -103,7 +103,8 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
   public on<TName extends EventName<TDataByName>>(
     ...args:
       | [TName, EventListener<TDataByName, TName>]
-      | [EventConfigByName<TDataByName>]
+      | [EventConfigByName<TDataByName> | null | undefined]
+      | []
   ): BoundOff {
     if (args.length === 2) {
       const [eventName, listener] = args;
@@ -147,22 +148,22 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
 
       return () => this.off(eventName, wrappedListener);
     } else {
-      const [configsByName] = args;
+      const [maybeConfigsByName] = args;
 
       const offs: BoundOff[] = [];
 
-      if (configsByName != null) {
-        if (typeof configsByName !== 'object') {
+      if (maybeConfigsByName != null) {
+        if (typeof maybeConfigsByName !== 'object') {
           throw new TypeError(
-            `Expects an object, got: ${inspect(configsByName)}`,
+            `Expects an object, got: ${inspect(maybeConfigsByName)}`,
           );
         }
 
         for (const eventName of [
-          ...Object.getOwnPropertyNames(configsByName),
-          ...Object.getOwnPropertySymbols(configsByName),
+          ...Object.getOwnPropertyNames(maybeConfigsByName),
+          ...Object.getOwnPropertySymbols(maybeConfigsByName),
         ] as EventNameExcludingNumber<TDataByName>[]) {
-          const configs = configsByName[eventName];
+          const configs = maybeConfigsByName[eventName];
           if (configs != null) {
             const listeners = Array.isArray(configs) ? configs : [configs];
             for (const listener of listeners) {
