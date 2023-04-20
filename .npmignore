@@ -4,9 +4,6 @@
 
 **/*.log
 
-dist/
 node_modules/
-package.json
 tmp/
 tsconfig.tsbuildinfo
-yarn.lock
