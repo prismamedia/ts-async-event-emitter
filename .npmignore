@@ -1,9 +1,12 @@
+.pnp.*
+.vscode/extensions.json
+.yarn/
+
 **/*.log
 
-.github
-.pnp.*
-.vscode
-.yarn
-
+dist/
 node_modules/
+package.json
+tmp/
 tsconfig.tsbuildinfo
+yarn.lock

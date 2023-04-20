@@ -2,7 +2,12 @@
   "name": "AsyncEventEmitter",
   "dockerComposeFile": "../docker-compose.yml",
   "service": "lib",
+  "overrideCommand": true,
   "workspaceFolder": "/workspace",
-  "extensions": ["esbenp.prettier-vscode", "arcanis.vscode-zipfs"],
-  "postStartCommand": "yarn install && yarn rebuild && yarn sdks vscode"
+  "postStartCommand": "yarn && yarn sdks vscode",
+  "customizations": {
+    "vscode": {
+      "extensions": ["arcanis.vscode-zipfs"]
+    }
+  }
 }

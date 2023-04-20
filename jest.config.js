@@ -1,5 +1,6 @@
 export default {
   testMatch: ['<rootDir>/src/**/*.test.ts'],
+
   moduleNameMapper: { '^(\\.{1,2}/.*)\\.js$': '$1' },
   extensionsToTreatAsEsm: ['.ts'],
   transform: {
@@ -7,7 +8,7 @@ export default {
       '@swc/jest',
       {
         jsc: {
-          parser: { syntax: 'typescript', decorators: true },
+          parser: { syntax: 'typescript' },
           target: 'es2022',
         },
       },

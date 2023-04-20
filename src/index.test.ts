@@ -1,34 +1,35 @@
+import { describe, expect, it } from '@jest/globals';
 import { AsyncEventEmitter, errorMonitor } from './index.js';
 
-enum EventName {
-  Pre = 'pre',
-  Post = 'post',
-}
-
-type EventMap = {
-  [EventName.Pre]: { at: number };
-  [EventName.Post]: { took: number };
-};
-
-enum NumericEventName {
-  Pre,
-  Post,
-}
-
-type NumericEventMap = {
-  [NumericEventName.Pre]: { at: number };
-  [NumericEventName.Post]: { took: number };
-};
-
-const pre = Symbol('Pre');
-const post = Symbol('Post');
-
-type SymbolEventMap = {
-  [pre]: { at: number };
-  [post]: { took: number };
-};
-
 describe('EventEmitter', () => {
+  enum EventName {
+    Pre = 'pre',
+    Post = 'post',
+  }
+
+  type EventMap = {
+    [EventName.Pre]: { at: number };
+    [EventName.Post]: { took: number };
+  };
+
+  enum NumericEventName {
+    Pre,
+    Post,
+  }
+
+  type NumericEventMap = {
+    [NumericEventName.Pre]: { at: number };
+    [NumericEventName.Post]: { took: number };
+  };
+
+  const pre = Symbol('Pre');
+  const post = Symbol('Post');
+
+  type SymbolEventMap = {
+    [pre]: { at: number };
+    [post]: { took: number };
+  };
+
   it('works with string event names', async () => {
     const ee = new AsyncEventEmitter<EventMap>();
 

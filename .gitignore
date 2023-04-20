@@ -1,23 +1,16 @@
 **/*.log
-**/*.npmrc
 
-.yarn/
+.npmrc
+
+.yarn/*
 !.yarn/cache/
 !.yarn/plugins/
 !.yarn/releases/
 !.yarn/sdks/
 !.yarn/versions/
 
-build/
 coverage/
 dist/
 node_modules/
 package-lock.json
 tsconfig.tsbuildinfo
-
-packages/**/build/
-packages/**/coverage/
-packages/**/dist/
-packages/**/node_modules/
-packages/**/package-lock.json
-packages/**/tsconfig.tsbuildinfo
