@@ -12,8 +12,7 @@ jobs:
       matrix:
         node:
           - 18
-          - 19
-          # - 20
+          - 20
 
         include:
           - node: 18
@@ -42,6 +41,9 @@ jobs:
 
       - name: Test
         run: yarn run test
+
+      - name: Lint package.json
+        run: yarn run publint --strict
 
       - name: Publish to npmjs
         if: "matrix.publish == true && startsWith(github.ref, 'refs/tags/')"
