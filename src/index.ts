@@ -182,7 +182,7 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
         }
       }
 
-      return () => offs.map((off) => off());
+      return () => offs.forEach((off) => off());
     }
   }
 
@@ -208,29 +208,62 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     timeout?: number | null,
   ): Promise<EventData<TDataByName, TName>> {
     return new Promise((resolve, reject) => {
-      if (timeout != null && timeout > 0) {
-        let off: BoundOff;
+      let off: BoundOff;
 
-        const timeoutId = setTimeout(() => {
-          off();
+      const timeoutId =
+        timeout != null
+          ? setTimeout(() => {
+              off();
 
-          reject(
-            new Error(
-              `Has waited for the "${String(
-                eventName,
-              )}" event more than ${timeout}ms`,
-            ),
-          );
-        }, timeout);
+              reject(
+                new Error(
+                  `Has waited for the "${String(
+                    eventName,
+                  )}" event more than ${timeout}ms`,
+                ),
+              );
+            }, timeout)
+          : undefined;
 
-        off = this.once(eventName, (eventData) => {
-          clearTimeout(timeoutId);
+      off = this.on(eventName, (eventData) => {
+        off();
+        timeoutId && clearTimeout(timeoutId);
+
+        resolve(eventData);
+      });
+    });
+  }
+
+  public async race<TName extends EventName<TDataByName>>(
+    eventNames: ReadonlyArray<TName>,
+    timeout?: number | null,
+  ): Promise<EventData<TDataByName, TName>> {
+    return new Promise((resolve, reject) => {
+      let offs: BoundOff[];
+
+      const timeoutId =
+        timeout != null
+          ? setTimeout(() => {
+              offs.forEach((off) => off());
+
+              reject(
+                new Error(
+                  `Has waited for the "${eventNames
+                    .map(String)
+                    .join(', ')}" event(s) more than ${timeout}ms`,
+                ),
+              );
+            }, timeout)
+          : undefined;
+
+      offs = eventNames.map((eventName) =>
+        this.on(eventName, (eventData) => {
+          offs.forEach((off) => off());
+          timeoutId && clearTimeout(timeoutId);
 
           resolve(eventData);
-        });
-      } else {
-        this.once(eventName, (eventData) => resolve(eventData));
-      }
+        }),
+      );
     });
   }
 

@@ -207,13 +207,13 @@ describe('EventEmitter', () => {
   it('wait works', async () => {
     const ee = new AsyncEventEmitter<{ [EventName.Pre]: {} }>();
 
-    await expect(ee.wait(EventName.Pre, 100)).rejects.toMatchInlineSnapshot(
-      `[Error: Has waited for the "pre" event more than 100ms]`,
+    await expect(ee.wait(EventName.Pre, 50)).rejects.toMatchInlineSnapshot(
+      `[Error: Has waited for the "pre" event more than 50ms]`,
     );
 
     expect(ee.eventNames()).toEqual([]);
 
-    const wait = ee.wait(EventName.Pre, 100);
+    const wait = ee.wait(EventName.Pre, 50);
 
     expect(ee.eventNames()).toEqual(['pre']);
 
@@ -225,6 +225,34 @@ describe('EventEmitter', () => {
     expect(waited).toEqual({
       test: 'wait',
     });
+
+    expect(ee.eventNames()).toEqual([]);
+  });
+
+  it('race works', async () => {
+    const ee = new AsyncEventEmitter<{
+      [EventName.Pre]: {};
+      [EventName.Post]: {};
+    }>();
+
+    await expect(
+      ee.race([EventName.Pre, EventName.Post], 50),
+    ).rejects.toMatchInlineSnapshot(
+      `[Error: Has waited for the "pre, post" event(s) more than 50ms]`,
+    );
+
+    expect(ee.eventNames()).toEqual([]);
+
+    const race = ee.race([EventName.Pre, EventName.Post], 50);
+
+    expect(ee.eventNames()).toEqual(['pre', 'post']);
+
+    const [raced] = await Promise.all([
+      race,
+      ee.emit(EventName.Post, { took: 123 }),
+    ]);
+
+    expect(raced).toEqual({ took: 123 });
 
     expect(ee.eventNames()).toEqual([]);
   });
