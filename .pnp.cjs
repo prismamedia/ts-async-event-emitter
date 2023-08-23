@@ -30,7 +30,7 @@ const RAW_RUNTIME_STATE =
           ["@swc/core", "virtual:17627573f9629049474bda54b51d84759882d90988f7076e8008026bb2320a07ece373b4a09a0c617ae620f2c3a39b820786514fb57846ffff1d87f90ae59a3c#npm:1.3.78"],\
           ["@swc/jest", "virtual:17627573f9629049474bda54b51d84759882d90988f7076e8008026bb2320a07ece373b4a09a0c617ae620f2c3a39b820786514fb57846ffff1d87f90ae59a3c#npm:0.2.29"],\
           ["@tsconfig/node18", "npm:18.2.1"],\
-          ["@types/node", "npm:18.17.7"],\
+          ["@types/node", "npm:18.17.8"],\
           ["@yarnpkg/sdks", "npm:3.0.0-rc.49"],\
           ["graphql", "npm:16.8.0"],\
           ["jest", "virtual:17627573f9629049474bda54b51d84759882d90988f7076e8008026bb2320a07ece373b4a09a0c617ae620f2c3a39b820786514fb57846ffff1d87f90ae59a3c#npm:29.6.3"],\
@@ -1271,7 +1271,7 @@ const RAW_RUNTIME_STATE =
           ["@swc/core", "virtual:17627573f9629049474bda54b51d84759882d90988f7076e8008026bb2320a07ece373b4a09a0c617ae620f2c3a39b820786514fb57846ffff1d87f90ae59a3c#npm:1.3.78"],\
           ["@swc/jest", "virtual:17627573f9629049474bda54b51d84759882d90988f7076e8008026bb2320a07ece373b4a09a0c617ae620f2c3a39b820786514fb57846ffff1d87f90ae59a3c#npm:0.2.29"],\
           ["@tsconfig/node18", "npm:18.2.1"],\
-          ["@types/node", "npm:18.17.7"],\
+          ["@types/node", "npm:18.17.8"],\
           ["@yarnpkg/sdks", "npm:3.0.0-rc.49"],\
           ["graphql", "npm:16.8.0"],\
           ["jest", "virtual:17627573f9629049474bda54b51d84759882d90988f7076e8008026bb2320a07ece373b4a09a0c617ae620f2c3a39b820786514fb57846ffff1d87f90ae59a3c#npm:29.6.3"],\
@@ -1621,10 +1621,10 @@ const RAW_RUNTIME_STATE =
       }]\
     ]],\
     ["@types/node", [\
-      ["npm:18.17.7", {\
-        "packageLocation": "./.yarn/cache/@types-node-npm-18.17.7-1be3a8991a-fda4202bf5.zip/node_modules/@types/node/",\
+      ["npm:18.17.8", {\
+        "packageLocation": "./.yarn/cache/@types-node-npm-18.17.8-10d75ea9fc-f6f723a83b.zip/node_modules/@types/node/",\
         "packageDependencies": [\
-          ["@types/node", "npm:18.17.7"]\
+          ["@types/node", "npm:18.17.8"]\
         ],\
         "linkType": "HARD"\
       }],\

@@ -1,5 +1,4 @@
 import { errorMonitor } from 'node:events';
-import { clearTimeout, setTimeout } from 'node:timers';
 import { inspect } from 'node:util';
 import type { Promisable } from 'type-fest';
 
@@ -205,29 +204,30 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
 
   public async wait<TName extends EventName<TDataByName>>(
     eventName: TName,
-    timeout?: number | null,
+    signal?: AbortSignal | number | null,
   ): Promise<EventData<TDataByName, TName>> {
+    const as =
+      typeof signal === 'number' ? AbortSignal.timeout(signal) : signal;
+    as?.throwIfAborted();
+
     return new Promise((resolve, reject) => {
       let off: BoundOff;
 
-      const timeoutId =
-        timeout != null
-          ? setTimeout(() => {
-              off();
+      const onAbort = () => {
+        off();
 
-              reject(
-                new Error(
-                  `Has waited for the "${String(
-                    eventName,
-                  )}" event more than ${timeout}ms`,
-                ),
-              );
-            }, timeout)
-          : undefined;
+        reject(
+          new Error(
+            `The wait of the "${String(eventName)}" event has been aborted`,
+          ),
+        );
+      };
+
+      as?.addEventListener('abort', onAbort, { once: true });
 
       off = this.on(eventName, (eventData) => {
         off();
-        timeoutId && clearTimeout(timeoutId);
+        as?.removeEventListener('abort', onAbort);
 
         resolve(eventData);
       });
@@ -236,30 +236,33 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
 
   public async race<TName extends EventName<TDataByName>>(
     eventNames: ReadonlyArray<TName>,
-    timeout?: number | null,
+    signal?: AbortSignal | number | null,
   ): Promise<EventData<TDataByName, TName>> {
+    const as =
+      typeof signal === 'number' ? AbortSignal.timeout(signal) : signal;
+    as?.throwIfAborted();
+
     return new Promise((resolve, reject) => {
       let offs: BoundOff[];
 
-      const timeoutId =
-        timeout != null
-          ? setTimeout(() => {
-              offs.forEach((off) => off());
+      const onAbort = () => {
+        offs.forEach((off) => off());
 
-              reject(
-                new Error(
-                  `Has waited for the "${eventNames
-                    .map(String)
-                    .join(', ')}" event(s) more than ${timeout}ms`,
-                ),
-              );
-            }, timeout)
-          : undefined;
+        reject(
+          new Error(
+            `The wait of the "${eventNames
+              .map(String)
+              .join(', ')}" event(s) has been aborted`,
+          ),
+        );
+      };
+
+      as?.addEventListener('abort', onAbort, { once: true });
 
       offs = eventNames.map((eventName) =>
         this.on(eventName, (eventData) => {
           offs.forEach((off) => off());
-          timeoutId && clearTimeout(timeoutId);
+          as?.removeEventListener('abort', onAbort);
 
           resolve(eventData);
         }),

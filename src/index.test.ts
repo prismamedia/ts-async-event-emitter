@@ -207,8 +207,10 @@ describe('EventEmitter', () => {
   it('wait works', async () => {
     const ee = new AsyncEventEmitter<{ [EventName.Pre]: {} }>();
 
-    await expect(ee.wait(EventName.Pre, 50)).rejects.toMatchInlineSnapshot(
-      `[Error: Has waited for the "pre" event more than 50ms]`,
+    await expect(
+      ee.wait(EventName.Pre, 50),
+    ).rejects.toThrowErrorMatchingInlineSnapshot(
+      `"The wait of the "pre" event has been aborted"`,
     );
 
     expect(ee.eventNames()).toEqual([]);
@@ -226,6 +228,27 @@ describe('EventEmitter', () => {
       test: 'wait',
     });
 
+    {
+      const ac = new AbortController();
+      ac.abort();
+
+      await expect(
+        ee.wait(EventName.Pre, ac.signal),
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `"This operation was aborted"`,
+      );
+    }
+
+    {
+      const ac = new AbortController();
+
+      await expect(
+        Promise.all([ee.wait(EventName.Pre, ac.signal), ac.abort()]),
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `"The wait of the "pre" event has been aborted"`,
+      );
+    }
+
     expect(ee.eventNames()).toEqual([]);
   });
 
@@ -237,8 +260,8 @@ describe('EventEmitter', () => {
 
     await expect(
       ee.race([EventName.Pre, EventName.Post], 50),
-    ).rejects.toMatchInlineSnapshot(
-      `[Error: Has waited for the "pre, post" event(s) more than 50ms]`,
+    ).rejects.toThrowErrorMatchingInlineSnapshot(
+      `"The wait of the "pre, post" event(s) has been aborted"`,
     );
 
     expect(ee.eventNames()).toEqual([]);
@@ -253,6 +276,30 @@ describe('EventEmitter', () => {
     ]);
 
     expect(raced).toEqual({ took: 123 });
+
+    {
+      const ac = new AbortController();
+      ac.abort();
+
+      await expect(
+        ee.race([EventName.Pre, EventName.Post], ac.signal),
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `"This operation was aborted"`,
+      );
+    }
+
+    {
+      const ac = new AbortController();
+
+      await expect(
+        Promise.all([
+          ee.race([EventName.Pre, EventName.Post], ac.signal),
+          ac.abort(),
+        ]),
+      ).rejects.toThrowErrorMatchingInlineSnapshot(
+        `"The wait of the "pre, post" event(s) has been aborted"`,
+      );
+    }
 
     expect(ee.eventNames()).toEqual([]);
   });
