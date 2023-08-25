@@ -294,8 +294,11 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     eventName: TName,
     eventData: EventData<TDataByName, TName>,
   ): Promise<void> {
-    await Promise.all(
-      this.eventListeners(eventName).map((listener) => listener(eventData)),
-    );
+    const listeners = this.#listenersByName.get(eventName);
+    if (listeners?.size) {
+      await Promise.all(
+        Array.from(listeners, (listener) => listener(eventData)),
+      );
+    }
   }
 }
