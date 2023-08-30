@@ -261,7 +261,7 @@ describe('EventEmitter', () => {
     await expect(
       ee.race([EventName.Pre, EventName.Post], 50),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"The wait of the "pre, post" event(s) has been aborted"`,
+      `"The wait of the "pre, post" events has been aborted"`,
     );
 
     expect(ee.eventNames()).toEqual([]);
@@ -297,7 +297,7 @@ describe('EventEmitter', () => {
           ac.abort(),
         ]),
       ).rejects.toThrowErrorMatchingInlineSnapshot(
-        `"The wait of the "pre, post" event(s) has been aborted"`,
+        `"The wait of the "pre, post" events has been aborted"`,
       );
     }
 
