@@ -259,6 +259,15 @@ describe('EventEmitter', () => {
       Promise.all([ee.throwOnError(), ee.emit('error', new Error('KO'))]),
     ).rejects.toThrowError('KO');
 
+    // handles signal
+    {
+      const ac = new AbortController();
+
+      await expect(
+        Promise.all([ee.throwOnError(ac.signal), (() => ac.abort())()]),
+      ).resolves.toEqual([undefined, undefined]);
+    }
+
     expect(ee.eventNames()).toEqual([]);
   });
 
