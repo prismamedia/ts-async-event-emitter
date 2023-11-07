@@ -252,6 +252,16 @@ describe('EventEmitter', () => {
     expect(ee.eventNames()).toEqual([]);
   });
 
+  it('throw on error', async () => {
+    const ee = new AsyncEventEmitter<{ [EventName.Pre]: {} }>();
+
+    await expect(
+      Promise.all([ee.throwOnError(), ee.emit('error', new Error('KO'))]),
+    ).rejects.toThrowError('KO');
+
+    expect(ee.eventNames()).toEqual([]);
+  });
+
   it('race works', async () => {
     const ee = new AsyncEventEmitter<{
       [EventName.Pre]: {};

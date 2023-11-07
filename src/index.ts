@@ -283,6 +283,31 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     });
   }
 
+  public async throwOnError(
+    maybeSignal?: AbortSignal | number | null,
+  ): Promise<void> {
+    const signal =
+      typeof maybeSignal === 'number'
+        ? AbortSignal.timeout(maybeSignal)
+        : maybeSignal || undefined;
+
+    signal?.throwIfAborted();
+
+    let error: any;
+
+    try {
+      error = await this.wait('error', signal);
+    } catch (error) {
+      if (error instanceof AbortError) {
+        return;
+      }
+
+      throw error;
+    }
+
+    throw error;
+  }
+
   public async race<TName extends EventName<TDataByName>>(
     eventNames: ReadonlyArray<TName>,
     maybeSignal?: AbortSignal | number | null,
