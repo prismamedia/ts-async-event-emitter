@@ -30,7 +30,7 @@ export type EventData<
 export type EventListener<
   TDataByName extends EventDataByName,
   TName extends EventName<TDataByName>,
-> = (eventData: EventData<TDataByName, TName>) => Promisable<void>;
+> = (eventData: EventData<TDataByName, TName>) => Promisable<any>;
 
 const unsubscribeFromSignalAbortEvent = Symbol(
   "unsubscribe from signal's abort event",

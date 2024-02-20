@@ -4,10 +4,5 @@
   "service": "lib",
   "overrideCommand": true,
   "workspaceFolder": "/workspace",
-  "postStartCommand": "yarn && yarn sdks vscode",
-  "customizations": {
-    "vscode": {
-      "extensions": ["arcanis.vscode-zipfs"]
-    }
-  }
+  "postStartCommand": "yarn"
 }
