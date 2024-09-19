@@ -19,7 +19,5 @@
     "packages/*/tsconfig.tsbuildinfo": true,
     "**/.yarn": true,
     "**/.pnp.*": true
-  },
-  "typescript.tsdk": ".yarn/sdks/typescript/lib",
-  "prettier.prettierPath": ".yarn/sdks/prettier/index.js"
+  }
 }
