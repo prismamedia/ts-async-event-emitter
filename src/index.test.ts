@@ -257,7 +257,7 @@ describe('EventEmitter', () => {
 
     await expect(
       Promise.all([ee.throwOnError(), ee.emit('error', new Error('KO'))]),
-    ).rejects.toThrowError('KO');
+    ).rejects.toThrow('KO');
 
     // handles signal
     {

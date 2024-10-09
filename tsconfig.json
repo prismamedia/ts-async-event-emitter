@@ -1,13 +1,14 @@
 {
-  "extends": "@tsconfig/node18",
+  "extends": "@tsconfig/node20",
 
   "include": ["src/**/*.ts"],
 
   "compilerOptions": {
-    "composite": true,
+    "experimentalDecorators": true,
+
+    "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    "experimentalDecorators": true,
 
     "rootDir": "src",
     "outDir": "dist"
