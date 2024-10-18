@@ -33,16 +33,12 @@ export type EventListener<
   TName extends EventName<TDataByName>,
 > = (eventData: EventData<TDataByName, TName>) => Promisable<any>;
 
-const unsubscribeFromSignalAbortEvent = Symbol(
-  "unsubscribe from signal's abort event",
-);
+const preOffHook = Symbol('Pre-Off hook');
 
 type WrappedEventListener<
   TDataByName extends EventDataByName,
   TName extends EventName<TDataByName>,
-> = EventListener<TDataByName, TName> & {
-  [unsubscribeFromSignalAbortEvent]?: () => void;
-};
+> = EventListener<TDataByName, TName> & { [preOffHook]?: () => void };
 
 export type EventConfig<
   TDataByName extends EventDataByName,
@@ -86,7 +82,7 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
   ): void {
     if (eventName != null) {
       if (listener) {
-        listener[unsubscribeFromSignalAbortEvent]?.();
+        listener[preOffHook]?.();
 
         const listeners = this.#listenersByName.get(eventName);
         if (listeners?.delete(listener) && !listeners.size) {
@@ -113,7 +109,7 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     listener: EventListener<TDataByName, TName>,
     signal?: AbortSignal | number | null,
     onAbort?: OnAbort,
-  ): BoundOff;
+  ): BoundOff & Disposable;
 
   /**
    * Subscribe to a bunch of events.
@@ -123,7 +119,7 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     configByName: EventConfigByName<TDataByName>,
     signal?: AbortSignal | number | null,
     onAbort?: OnAbort,
-  ): BoundOff;
+  ): BoundOff & Disposable;
 
   public on<TName extends EventName<TDataByName>>(
     ...args:
@@ -138,7 +134,7 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
           signal?: AbortSignal | number | null,
           onAbort?: OnAbort,
         ]
-  ): BoundOff {
+  ): BoundOff & Disposable {
     if (typeof args[0] === 'object' && args[0] != null) {
       const [configByName, maybeSignal, maybeOnAbort] = args as [
         configByName: EventConfigByName<TDataByName>,
@@ -168,7 +164,9 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
         }
       }
 
-      return () => offs.forEach((off) => off());
+      const off = () => offs.forEach((off) => off());
+
+      return Object.assign(off, { [Symbol.dispose]: off });
     }
 
     const [eventName, listener, maybeSignal, maybeOnAbort] = args as [
@@ -195,8 +193,6 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
       this.#listenersByName.set(eventName, (listeners = new Set()));
     }
 
-    const off: BoundOff = () => this.off(eventName, wrappedListener);
-
     const wrappedListener: WrappedEventListener<TDataByName, TName> =
       eventName === 'error' || eventName === errorMonitor
         ? listener
@@ -215,6 +211,8 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
             }
           };
 
+    const off: BoundOff = () => this.off(eventName, wrappedListener);
+
     const signal =
       typeof maybeSignal === 'number'
         ? AbortSignal.timeout(maybeSignal)
@@ -223,21 +221,26 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     if (signal) {
       signal.throwIfAborted();
 
-      maybeOnAbort &&
-        signal.addEventListener('abort', maybeOnAbort, { once: true });
-      signal.addEventListener('abort', off, { once: true });
+      const onAbort = maybeOnAbort
+        ? (event: Event) => {
+            try {
+              maybeOnAbort(event);
+            } finally {
+              off();
+            }
+          }
+        : off;
+
+      signal.addEventListener('abort', onAbort, { once: true });
 
       Object.assign(wrappedListener, {
-        [unsubscribeFromSignalAbortEvent]: () => {
-          maybeOnAbort && signal.removeEventListener('abort', maybeOnAbort);
-          signal.removeEventListener('abort', off);
-        },
+        [preOffHook]: () => signal.removeEventListener('abort', onAbort),
       });
     }
 
     listeners.add(wrappedListener);
 
-    return off;
+    return Object.assign(off, { [Symbol.dispose]: off });
   }
 
   /**
@@ -249,7 +252,7 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     listener: EventListener<TDataByName, TName>,
     signal?: AbortSignal | number | null,
     onAbort?: OnAbort,
-  ): BoundOff {
+  ): BoundOff & Disposable {
     const off = this.on(
       eventName,
       (eventData) => {
@@ -292,15 +295,8 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
   }
 
   public async throwOnError(
-    maybeSignal?: AbortSignal | number | null,
+    signal?: AbortSignal | number | null,
   ): Promise<void> {
-    const signal =
-      typeof maybeSignal === 'number'
-        ? AbortSignal.timeout(maybeSignal)
-        : maybeSignal || undefined;
-
-    signal?.throwIfAborted();
-
     let error: any;
 
     try {
@@ -332,28 +328,27 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     signal?.throwIfAborted();
 
     return new Promise((resolve, reject) => {
-      const onAbort = () => {
-        offs.forEach((off) => off());
+      const off = this.on(
+        Object.fromEntries(
+          eventNames.map((eventName) => [
+            eventName,
+            (eventData) => {
+              off();
 
-        reject(
-          new AbortError(
-            `The wait of the "${eventNames
-              .map(String)
-              .join(', ')}" events has been aborted`,
-            { cause: signal?.reason },
+              resolve(eventData);
+            },
+          ]),
+        ) as EventConfigByName<any>,
+        signal,
+        () =>
+          reject(
+            new AbortError(
+              `The wait of the "${eventNames
+                .map(String)
+                .join(', ')}" events has been aborted`,
+              signal?.reason && { cause: signal.reason },
+            ),
           ),
-        );
-      };
-
-      signal?.addEventListener('abort', onAbort, { once: true });
-
-      const offs = eventNames.map((eventName) =>
-        this.on(eventName, (eventData) => {
-          offs.forEach((off) => off());
-          signal?.removeEventListener('abort', onAbort);
-
-          resolve(eventData);
-        }),
       );
     });
   }
