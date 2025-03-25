@@ -1,4 +1,5 @@
-import { describe, expect, it } from '@jest/globals';
+import assert from 'node:assert';
+import { describe, it } from 'node:test';
 import { AsyncEventEmitter, errorMonitor } from './index.js';
 
 describe('EventEmitter', () => {
@@ -47,42 +48,42 @@ describe('EventEmitter', () => {
       result.took = took;
     });
 
-    expect(result).toEqual({});
+    assert.deepEqual(result, {});
 
     await ee.emit(EventName.Pre, { at: 2000 });
 
-    expect(result).toEqual({
+    assert.deepEqual(result, {
       first: 2000,
       second: 4000,
     });
 
     await ee.emit(EventName.Post, { took: 100 });
 
-    expect(result).toEqual({
+    assert.deepEqual(result, {
       first: 2000,
       second: 4000,
       took: 100,
     });
 
-    expect(ee.eventNames()).toEqual(['pre', 'post']);
+    assert.deepEqual(ee.eventNames(), ['pre', 'post']);
 
     firstOffPre();
 
-    expect(ee.eventNames()).toEqual(['pre', 'post']);
+    assert.deepEqual(ee.eventNames(), ['pre', 'post']);
 
     offPost();
 
-    expect(ee.eventNames()).toEqual(['pre']);
+    assert.deepEqual(ee.eventNames(), ['pre']);
 
     secondOffPre();
 
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
 
     await ee.emit(EventName.Pre, { at: 10000 });
 
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
 
-    expect(result).toEqual({
+    assert.deepEqual(result, {
       first: 2000,
       second: 4000,
       took: 100,
@@ -96,22 +97,22 @@ describe('EventEmitter', () => {
     const secondOffPre = ee.on(NumericEventName.Pre, () => {});
     const offPost = ee.on(NumericEventName.Post, async () => {});
 
-    expect(ee.eventNames()).toEqual([
+    assert.deepEqual(ee.eventNames(), [
       NumericEventName.Pre,
       NumericEventName.Post,
     ]);
 
     firstOffPre();
-    expect(ee.eventNames()).toEqual([
+    assert.deepEqual(ee.eventNames(), [
       NumericEventName.Pre,
       NumericEventName.Post,
     ]);
 
     offPost();
-    expect(ee.eventNames()).toEqual([NumericEventName.Pre]);
+    assert.deepEqual(ee.eventNames(), [NumericEventName.Pre]);
 
     secondOffPre();
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
   });
 
   it('works with symbol event names', () => {
@@ -121,16 +122,16 @@ describe('EventEmitter', () => {
     const secondOffPre = ee.on(pre, () => {});
     const offPost = ee.on(post, async () => {});
 
-    expect(ee.eventNames()).toEqual([pre, post]);
+    assert.deepEqual(ee.eventNames(), [pre, post]);
 
     firstOffPre();
-    expect(ee.eventNames()).toEqual([pre, post]);
+    assert.deepEqual(ee.eventNames(), [pre, post]);
 
     offPost();
-    expect(ee.eventNames()).toEqual([pre]);
+    assert.deepEqual(ee.eventNames(), [pre]);
 
     secondOffPre();
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
   });
 
   it('on "config" works with string event names', () => {
@@ -145,10 +146,10 @@ describe('EventEmitter', () => {
       error: (error) => {},
     });
 
-    expect(ee.eventNames()).toEqual([EventName.Pre, EventName.Post, 'error']);
+    assert.deepEqual(ee.eventNames(), [EventName.Pre, EventName.Post, 'error']);
 
     off();
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
   });
 
   it('on "config" works with symbol event names', () => {
@@ -163,10 +164,10 @@ describe('EventEmitter', () => {
       [errorMonitor]: () => {},
     });
 
-    expect(ee.eventNames()).toEqual([pre, post, errorMonitor]);
+    assert.deepEqual(ee.eventNames(), [pre, post, errorMonitor]);
 
     off();
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
   });
 
   it('works without typing', async () => {
@@ -190,85 +191,80 @@ describe('EventEmitter', () => {
       count++;
     });
 
-    expect(count).toEqual(0);
-    expect(ee.eventNames()).toEqual(['pre']);
+    assert.equal(count, 0);
+    assert.deepEqual(ee.eventNames(), ['pre']);
 
     await ee.emit(EventName.Pre, {});
 
-    expect(count).toEqual(2);
-    expect(ee.eventNames()).toEqual([]);
+    assert.equal(count, 2);
+    assert.deepEqual(ee.eventNames(), []);
 
     await ee.emit(EventName.Pre, {});
 
-    expect(count).toEqual(2);
-    expect(ee.eventNames()).toEqual([]);
+    assert.equal(count, 2);
+    assert.deepEqual(ee.eventNames(), []);
   });
 
   it('wait works', async () => {
     const ee = new AsyncEventEmitter<{ [EventName.Pre]: {} }>();
 
-    await expect(
-      ee.wait(EventName.Pre, 50),
-    ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"The wait of the "pre" event has been aborted"`,
-    );
+    await assert.rejects(() => ee.wait(EventName.Pre, 50), {
+      message: `The wait of the "pre" event has been aborted`,
+    });
 
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
 
     const wait = ee.wait(EventName.Pre, 50);
 
-    expect(ee.eventNames()).toEqual(['pre']);
+    assert.deepEqual(ee.eventNames(), ['pre']);
 
     const [waited] = await Promise.all([
       wait,
       ee.emit(EventName.Pre, { test: 'wait' }),
     ]);
 
-    expect(waited).toEqual({
-      test: 'wait',
-    });
+    assert.deepEqual(waited, { test: 'wait' });
 
     {
       const ac = new AbortController();
       ac.abort();
 
-      await expect(
-        ee.wait(EventName.Pre, ac.signal),
-      ).rejects.toThrowErrorMatchingInlineSnapshot(
-        `"This operation was aborted"`,
-      );
+      await assert.rejects(() => ee.wait(EventName.Pre, ac.signal), {
+        message: `This operation was aborted`,
+      });
     }
 
     {
       const ac = new AbortController();
 
-      await expect(
-        Promise.all([ee.wait(EventName.Pre, ac.signal), ac.abort()]),
-      ).rejects.toThrowErrorMatchingInlineSnapshot(
-        `"The wait of the "pre" event has been aborted"`,
+      await assert.rejects(
+        () => Promise.all([ee.wait(EventName.Pre, ac.signal), ac.abort()]),
+        { message: `The wait of the "pre" event has been aborted` },
       );
     }
 
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
   });
 
   it('throw on error', async () => {
     const ee = new AsyncEventEmitter<{ [EventName.Pre]: {} }>();
 
-    await expect(
-      Promise.all([ee.throwOnError(), ee.emit('error', new Error('KO'))]),
-    ).rejects.toThrow('KO');
+    await assert.rejects(
+      () => Promise.all([ee.throwOnError(), ee.emit('error', new Error('KO'))]),
+      { message: `KO` },
+    );
 
     // handles signal
     {
       const ac = new AbortController();
 
-      await expect(
-        Promise.all([ee.throwOnError(ac.signal), (() => ac.abort())()]),
-      ).resolves.toEqual([undefined, undefined]);
+      assert.deepEqual(
+        await Promise.all([ee.throwOnError(ac.signal), (() => ac.abort())()]),
+        [undefined, undefined],
+      );
     }
 
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
   });
 
   it('race works', async () => {
@@ -277,50 +273,47 @@ describe('EventEmitter', () => {
       [EventName.Post]: {};
     }>();
 
-    await expect(
-      ee.race([EventName.Pre, EventName.Post], 50),
-    ).rejects.toThrowErrorMatchingInlineSnapshot(
-      `"The wait of the "pre, post" events has been aborted"`,
-    );
+    await assert.rejects(() => ee.race([EventName.Pre, EventName.Post], 50), {
+      message: `The wait of the "pre, post" events has been aborted`,
+    });
 
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
 
     const race = ee.race([EventName.Pre, EventName.Post], 50);
 
-    expect(ee.eventNames()).toEqual(['pre', 'post']);
+    assert.deepEqual(ee.eventNames(), ['pre', 'post']);
 
     const [raced] = await Promise.all([
       race,
       ee.emit(EventName.Post, { took: 123 }),
     ]);
 
-    expect(raced).toEqual({ took: 123 });
+    assert.deepEqual(raced, { took: 123 });
 
     {
       const ac = new AbortController();
       ac.abort();
 
-      await expect(
-        ee.race([EventName.Pre, EventName.Post], ac.signal),
-      ).rejects.toThrowErrorMatchingInlineSnapshot(
-        `"This operation was aborted"`,
+      await assert.rejects(
+        () => ee.race([EventName.Pre, EventName.Post], ac.signal),
+        { message: `This operation was aborted` },
       );
     }
 
     {
       const ac = new AbortController();
 
-      await expect(
-        Promise.all([
-          ee.race([EventName.Pre, EventName.Post], ac.signal),
-          ac.abort(),
-        ]),
-      ).rejects.toThrowErrorMatchingInlineSnapshot(
-        `"The wait of the "pre, post" events has been aborted"`,
+      await assert.rejects(
+        () =>
+          Promise.all([
+            ee.race([EventName.Pre, EventName.Post], ac.signal),
+            ac.abort(),
+          ]),
+        { message: `The wait of the "pre, post" events has been aborted` },
       );
     }
 
-    expect(ee.eventNames()).toEqual([]);
+    assert.deepEqual(ee.eventNames(), []);
   });
 
   it('handle errors properly', async () => {
@@ -332,41 +325,56 @@ describe('EventEmitter', () => {
 
     const eventEmitterWithoutErrorListener = new AsyncEventEmitter(config);
 
-    await expect(
-      eventEmitterWithoutErrorListener.emit('myEventName', null),
-    ).rejects.toThrowErrorMatchingInlineSnapshot(`"An error"`);
+    await assert.rejects(
+      () => eventEmitterWithoutErrorListener.emit('myEventName', null),
+      { message: `An error` },
+    );
+
+    await assert.rejects(
+      () =>
+        eventEmitterWithoutErrorListener.emit(
+          'error',
+          new Error('External error'),
+        ),
+      { message: `External error` },
+    );
 
     const eventEmitterWithErrorMonitorListener = new AsyncEventEmitter({
       ...config,
 
       [errorMonitor]: (error) => {
-        expect(error).toBeInstanceOf(Error);
-        expect(error.message).toEqual('An error');
+        assert(error instanceof Error);
+        assert.equal(error.message, 'An error');
       },
     });
 
-    await expect(
-      eventEmitterWithErrorMonitorListener.emit('myEventName', null),
-    ).rejects.toThrowErrorMatchingInlineSnapshot(`"An error"`);
+    await assert.rejects(
+      () => eventEmitterWithErrorMonitorListener.emit('myEventName', null),
+      { message: `An error` },
+    );
 
     const eventEmitterWithErrorListener = new AsyncEventEmitter({
       ...config,
 
       [errorMonitor]: (error) => {
-        expect(error).toBeInstanceOf(Error);
-        expect(error.message).toEqual('An error');
+        assert(error instanceof Error);
+        assert.equal(error.message, 'An error');
       },
 
       error: (error) => {
-        expect(error).toBeInstanceOf(Error);
-        expect(error.message).toEqual('An error');
+        assert(error instanceof Error);
+        assert.equal(error.message, 'An error');
       },
     });
 
-    await expect(
-      eventEmitterWithErrorListener.emit('myEventName', null),
-    ).resolves.toBeUndefined();
+    assert.equal(
+      await eventEmitterWithErrorListener.emit('myEventName', null),
+      undefined,
+    );
 
-    expect.assertions(9);
+    assert.equal(
+      await eventEmitterWithErrorListener.emit('error', new Error('An error')),
+      undefined,
+    );
   });
 });

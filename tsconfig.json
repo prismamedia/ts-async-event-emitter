@@ -1,16 +1,25 @@
 {
-  "extends": "@tsconfig/node20",
-
-  "include": ["src/**/*.ts"],
+  "include": ["${configDir}/src/**/*.ts"],
 
   "compilerOptions": {
-    "experimentalDecorators": true,
+    "rootDir": "${configDir}/src",
+    "outDir": "${configDir}/dist",
+
+    "lib": ["ESNext"],
+    "target": "ES2024",
+    "module": "NodeNext",
 
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
 
-    "rootDir": "src",
-    "outDir": "dist"
+    "allowJs": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "noImplicitOverride": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "verbatimModuleSyntax": true
   }
 }

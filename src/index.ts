@@ -1,4 +1,5 @@
 import { errorMonitor } from 'node:events';
+import { clearInterval, setInterval } from 'node:timers';
 import { inspect } from 'node:util';
 import type { Promisable } from 'type-fest';
 import { AbortError } from './error.js';
@@ -194,22 +195,12 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     }
 
     const wrappedListener: WrappedEventListener<TDataByName, TName> =
-      eventName === 'error' || eventName === errorMonitor
+      eventName === errorMonitor || eventName === 'error'
         ? listener
-        : async (eventData) => {
-            try {
-              await listener(eventData);
-            } catch (error) {
-              // cf: https://nodejs.org/api/events.html#events_error_events
-              await this.emit(errorMonitor, error);
-
-              if (this.#listenersByName.get('error')?.size) {
-                await this.emit('error', error);
-              } else {
-                throw error;
-              }
-            }
-          };
+        : (eventData) =>
+            new Promise((resolve) => resolve(listener(eventData))).catch(
+              (error) => this.emit('error', error),
+            );
 
     const off: BoundOff = () => this.off(eventName, wrappedListener);
 
@@ -278,20 +269,30 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
 
     signal?.throwIfAborted();
 
-    return new Promise((resolve, reject) =>
+    return new Promise((resolve, reject) => {
+      // To avoid the error: 'Promise resolution is still pending but the event loop has already resolved'
+      const keepalive = setInterval(() => {}, 1000);
+
       this.once(
         eventName,
-        (eventData) => resolve(eventData),
+        (eventData) => {
+          clearInterval(keepalive);
+
+          resolve(eventData);
+        },
         signal,
-        () =>
+        () => {
+          clearInterval(keepalive);
+
           reject(
             new AbortError(
               `The wait of the "${String(eventName)}" event has been aborted`,
               signal?.reason && { cause: signal.reason },
             ),
-          ),
-      ),
-    );
+          );
+        },
+      );
+    });
   }
 
   public async throwOnError(
@@ -328,11 +329,15 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     signal?.throwIfAborted();
 
     return new Promise((resolve, reject) => {
+      // To avoid the error: 'Promise resolution is still pending but the event loop has already resolved'
+      const keepalive = setInterval(() => {}, 1000);
+
       const off = this.on(
         Object.fromEntries(
           eventNames.map((eventName) => [
             eventName,
             (eventData) => {
+              clearInterval(keepalive);
               off();
 
               resolve(eventData);
@@ -340,7 +345,9 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
           ]),
         ) as EventConfigByName<any>,
         signal,
-        () =>
+        () => {
+          clearInterval(keepalive);
+
           reject(
             new AbortError(
               `The wait of the "${eventNames
@@ -348,7 +355,8 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
                 .join(', ')}" events has been aborted`,
               signal?.reason && { cause: signal.reason },
             ),
-          ),
+          );
+        },
       );
     });
   }
@@ -377,11 +385,17 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
     eventName: TName,
     eventData: EventData<TDataByName, TName>,
   ): Promise<void> {
+    if (eventName === 'error') {
+      await this.emit(errorMonitor, eventData);
+    }
+
     const listeners = this.#listenersByName.get(eventName);
     if (listeners?.size) {
       await Promise.all(
         Array.from(listeners, (listener) => listener(eventData)),
       );
+    } else if (eventName === 'error') {
+      throw eventData;
     }
   }
 }

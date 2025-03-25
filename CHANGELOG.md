@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/)
 and this project adheres to [Semantic Versioning](http://semver.org/).
 
+## [7.0.0] - 2025-03-18
+
+### Changed
+
+- Requires Node >=22.11
+- Upgraded dependencies
+
 ## [6.0.0] - 2023-10-09
 
 ### Changed

@@ -9,7 +9,7 @@
     "url": "https://github.com/prismamedia/ts-async-event-emitter"
   },
   "engines": {
-    "node": ">=20.10"
+    "node": ">=22.11"
   },
   "type": "module",
   "exports": {
@@ -21,22 +21,19 @@
   "sideEffects": false,
   "scripts": {
     "compile": "tsc --build",
-    "compile:watch": "yarn run compile --watch",
-    "test": "yarn node --no-warnings --experimental-vm-modules $(yarn bin jest)",
-    "test:watch": "yarn run test --watchAll",
-    "format": "prettier --write ."
+    "compile:watch": "tsc --build --watch",
+    "test": "NODE_ENV=test tsx --test --experimental-test-snapshots \"./src/**/*.test.ts\"",
+    "test:update": "NODE_ENV=test tsx --test --experimental-test-snapshots --test-update-snapshots \"./src/**/*.test.ts\"",
+    "test:watch": "NODE_ENV=test tsx --test --watch --experimental-test-snapshots \"./src/**/*.test.ts\"",
+    "format": "prettier --cache --write ."
   },
   "devDependencies": {
-    "@jest/globals": "30.0.0-alpha.6",
-    "@swc/core": "1.7.36",
-    "@swc/jest": "0.2.36",
-    "@tsconfig/node20": "20.1.4",
-    "@types/node": "20.16.12",
-    "jest": "30.0.0-alpha.6",
-    "prettier": "3.3.3",
-    "publint": "0.2.11",
-    "type-fest": "4.26.1",
-    "typescript": "5.6.3"
+    "@types/node": "22.13.13",
+    "prettier": "3.5.3",
+    "publint": "0.3.9",
+    "tsx": "4.19.3",
+    "type-fest": "4.38.0",
+    "typescript": "5.8.2"
   },
-  "packageManager": "yarn@4.5.0"
+  "packageManager": "yarn@4.7.0"
 }
