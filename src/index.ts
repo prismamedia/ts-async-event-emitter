@@ -271,19 +271,17 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
 
     return new Promise((resolve, reject) => {
       // To avoid the error: 'Promise resolution is still pending but the event loop has already resolved'
-      const keepalive = setInterval(() => {}, 1000);
+      const keepalive = setInterval(() => {}, 1_000);
 
       this.once(
         eventName,
         (eventData) => {
           clearInterval(keepalive);
-
           resolve(eventData);
         },
         signal,
         () => {
           clearInterval(keepalive);
-
           reject(
             new AbortError(
               `The wait of the "${String(eventName)}" event has been aborted`,
@@ -330,16 +328,15 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
 
     return new Promise((resolve, reject) => {
       // To avoid the error: 'Promise resolution is still pending but the event loop has already resolved'
-      const keepalive = setInterval(() => {}, 1000);
+      const keepalive = setInterval(() => {}, 1_000);
 
       const off = this.on(
         Object.fromEntries(
           eventNames.map((eventName) => [
             eventName,
             (eventData) => {
-              clearInterval(keepalive);
               off();
-
+              clearInterval(keepalive);
               resolve(eventData);
             },
           ]),
@@ -347,7 +344,6 @@ export class AsyncEventEmitter<TDataByName extends EventDataByName = any> {
         signal,
         () => {
           clearInterval(keepalive);
-
           reject(
             new AbortError(
               `The wait of the "${eventNames
